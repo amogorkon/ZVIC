@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "pytest type_normalization",
+			"command": "pytest",
+			"args": [
+				"tests/test_type_normalization.py"
+			],
+			"group": "test",
+			"problemMatcher": [
+				"$pytest"
+			]
+		}
+	]
+}
