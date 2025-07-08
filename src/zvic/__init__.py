@@ -1,4 +1,5 @@
 from .main import (
+    canonical_signature,
     canonicalize,
     canonicalized_to_json,
     is_compatible,
@@ -10,4 +11,5 @@ __all__ = [
     "is_compatible",
     "canonicalized_to_json",
     "json_to_canonicalized",
+    "canonical_signature",
 ]
