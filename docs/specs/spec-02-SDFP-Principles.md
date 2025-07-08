@@ -1,31 +1,31 @@
 
+
 # Spec 02: SDFP Principles
 
 ## Definition
 
-Signature-Driven Functional Programming (SDFP) is a runtime programming paradigm where the behavior and lifecycle of functional code is governed by the structure of its function signatures, not by external configuration or versioning. SDFP is a paradigm, not a specific implementation.
-
+Signature-Driven Functional Programming (SDFP) in ZVIC is a paradigm where all functional code is governed by normalized, context-aware type signatures and protocol evidence, not by versioning or migration logic. SDFP is now strictly structural and context-driven.
 
 ## Core Principles
 
-- **First-class functions only**: Modules should expose functions without internal state.
-- **Signature-centric validation**: Compatibility is enforced by comparing function signatures (e.g., via `inspect.signature()` in Python).
-- **Hot reload enforcement**: Modules can be reloaded safely if all signatures remain compatible.
-- **Declarative, observable**: Runtime code behavior is inspectable and predictable.
-
+- **First-class, stateless functions:** All modules expose pure functions; no internal state is assumed or required.
+- **Kind- and context-aware validation:** Compatibility is determined by kind signatures, type normalization, and contextual (static/dynamic) evidence.
+- **Hot reload and dynamic adaptation:** Modules can be reloaded or swapped if and only if all type and protocol contracts are satisfied in the current context.
+- **Declarative, explainable:** All compatibility and failure cases are explainable via evidence trees and error messaging.
 
 ## Use Cases
 
-- Shared logic across microservices
-- Safe plugin/module reloads in development and production
-- Real-time interface adaptation in agent-assisted systems
-
+- Shared logic across microservices and distributed systems
+- Safe, context-aware plugin/module reloads
+- Real-time interface adaptation in agent-driven or dynamic environments
+- Static and dynamic contract checking in CI, REPL, and runtime
 
 ## Benefits
 
-- Predictable module behavior
-- Reduced risk of runtime errors due to interface drift
-- Enables rapid iteration and deployment
+- Predictable, explainable module behavior
+- No version drift or migration overhead
+- Rapid, safe iteration and deployment
+- Full support for advanced type features (HKTs, protocols, partials)
 
 ---
 

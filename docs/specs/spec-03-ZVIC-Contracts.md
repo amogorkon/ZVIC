@@ -1,49 +1,44 @@
 
+
 # Spec 03: ZVIC Contracts
 
 ## Definition
 
-Zero-Version Interface Contracts (ZVIC) is a paradigm for managing code compatibility without version numbers, relying on runtime verification of callable structure. ZVIC is a paradigm, not a specific implementation. The JustUse project applies this paradigm to real-world systems.
-
+ZVIC Contracts are formal, migration-free interface contracts based on kind signatures, protocol coherence, and contextual evidence. All compatibility is structural and context-driven; versioning and migration are not supported or required.
 
 ## Core Principles
 
-- **No semantic versioning required**
-- **Interface stability through signature hashes**
-- **Runtime fail-fast checks on API shape**
-- **Inter-module contracts verified dynamically**
-
+- **No versioning or migration:** All contracts are defined by current structure and context only.
+- **Kind and protocol coherence:** Interface stability is enforced by kind signatures and trait-style protocol attribute ownership.
+- **Contextual, explainable checks:** All contract checks are performed in a static or dynamic context, with full evidence and error reporting.
+- **Partial and gradual typing:** Contracts support partial types and gradual evolution, with explicit evidence for unknowns.
 
 ## Benefits
 
-- No dependency version drift
-- Hashable, inspectable contracts
-- Ideal for fast-moving, high-trust teams
-
+- No dependency drift or legacy baggage
+- Fully explainable, inspectable contracts and errors
+- Safe, rapid evolution of interfaces and protocols
 
 ## Error Handling Example
 
-When a function signature changes incompatibly, a structured error is emitted:
+When a contract check fails, a structured, explainable error is emitted:
 
 ```jsonc
 {
-  "error_id": "JU3010",
-  "type": "SignatureMismatchError",
-  "error_namespace": "JUSTUSE_RELOADER",
-  "message": "Function 'parse_order' signature changed incompatibly",
+  "error_id": "ZV5001",
+  "type": "KindSignatureMismatch",
+  "error_namespace": "ZVIC_CORE",
+  "message": "Container kind mismatch: expected '* → *', actual '*'",
   "context": {
-    "function": "parse_order",
-    "old_signature": "parse_order(data: dict) -> Order",
-    "new_signature": "parse_order(data: dict, *, flags: int = 0) -> Order"
+    "expected_kind": "* → *",
+    "actual_kind": "*"
   },
-  "recovery_actions": [
-    {
-      "type": "manual_review",
-      "description": "Check if new optional args are backwards compatible"
-    }
-  ],
-  "justuse_version": "0.8.2",
-  "timestamp": "2025-06-21T22:14:59Z"
+  "evidence": {
+    "rule": "HKT_KIND_MISMATCH",
+    "expected": "* → *",
+    "actual": "*"
+  },
+  "timestamp": "2025-07-08T00:00:00Z"
 }
 ```
 

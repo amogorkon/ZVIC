@@ -48,3 +48,57 @@ ZVIC is both a project and a paradigm for safe, dynamic code reuse in distribute
 ---
 
 > Function and class signatures should be treated as the source of truth for compatibility and interface reasoning. Version numbers are not relevant; structure and runtime validation are paramount.
+
+## Additional Features
+
+
+### Handler-Based Type Normalization & Annotation Constraints
+Handler-based, extensible type normalization for all Python types.
+Maps Python built-ins, generics, NumPy, ctypes, dataclasses, enums, and user-defined types to JSON Schema–style dicts.
+Fully supports modern Python typing syntax (e.g., `type | None`, `list[str]`, `dict[str, float]`, etc.).
+Custom type handlers can be registered dynamically at runtime for new or domain-specific types, without modifying core logic.
+Output is standards-aligned and structured for seamless LLM and tool integration.
+
+#### Annotation Constraints
+Any call expression in a type annotation (e.g., `int(0 < x < 100)`, `CustomType(config="A")`) is automatically rewritten as `Annotated[type, "constraint"]`, where `constraint` is the string inside the parentheses. This transformation is recursive and applies to container types as well:
+
+```python
+def foo(x: int(0 < _ < 100)) -> int:
+	pass
+# becomes
+def foo(x: Annotated[int, "0 < _ < 100"]) -> int:
+	pass
+
+def bar(x: list[int(0 < _ < 100)]) -> int:
+	pass
+# becomes
+def bar(x: list[Annotated[int, "0 < _ < 100"]]) -> int:
+	pass
+
+def baz(x: dict[str, CustomType(config="A")]) -> None:
+	pass
+# becomes
+def baz(x: dict[str, Annotated[CustomType, 'config="A"']]) -> None:
+	pass
+```
+This enables expressive, composable, and runtime-reflectable constraints for all types, including containers and user-defined types. The transformation is performed at the AST level and auto-injects `from typing import Annotated` if needed.
+
+### Canonicalization & Compatibility Checking
+Canonicalizes functions, classes, and modules for robust, structure-based interface comparison.
+Employs handler-based extensibility and pattern matching for future-proof normalization and canonicalization.
+Detects and reports contract differences and compatibility issues dynamically at runtime.
+Provides diagnostics in both machine-readable (JSON) and human-readable (Markdown) formats for interface mismatches.
+
+### Runtime Enforcement & Diagnostics
+All contract checks and type normalization are performed dynamically at runtime.
+Fail-fast: incompatible changes are detected and reported immediately, ensuring interface safety.
+Diagnostics are structured for both LLM and human consumption (JSON, Markdown, etc.).
+
+### Extensibility & Interoperability
+New type handlers and contract rules can be added at runtime, without altering the core system.
+JSON Schema–style output enables integration with LLMs, OpenAPI, and other tools.
+Designed for distributed, hot-reloadable Python systems and dynamic environments.
+
+---
+
+> The handler-based normalization and canonicalization systems make ZVIC a robust foundation for LLM-driven code reasoning, compatibility checking, and dynamic interface management.

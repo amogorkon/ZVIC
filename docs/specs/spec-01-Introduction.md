@@ -1,41 +1,46 @@
 
-# Spec 01: Introduction
+
+# ZVIC Abstract Type Compatibility Model
 
 ## 1. Purpose & Scope
 
-This document introduces the foundational paradigms of Signature-Driven Functional Programming (SDFP) and Zero-Version Interface Contracts (ZVIC), which underpin the JustUse project. It defines the motivation, scope, and intended audience for these specifications.
+This document introduces the ZVIC abstract type compatibility model, a ground-up reimplementation with no legacy or migration support. It defines the new formalism, architecture, and developer experience for type compatibility in dynamic Python systems.
 
 **Scope:**
-- Overview of SDFP and ZVIC paradigms
-- Key principles and definitions
-- High-level use cases
+- Formal kind system for higher-kinded types (HKTs)
+- Trait-style protocol coherence and attribute ownership
+- Contextual (static/dynamic) verification and evidence tracking
+- Gradual typing and partial type support
+- Pythonic, ergonomic API for all operations
 
 **Audience:**
-Developers, architects, and DevOps engineers working with dynamic, distributed Python systems who seek to improve code reliability and maintainability without the overhead of traditional versioning.
+Developers, architects, and tool authors building or integrating dynamic, distributed Python systems requiring robust, migration-free type compatibility.
 
 ---
 
-## 2. Specification Overview
+## 2. Model Overview
 
-Traditional versioning and interface management approaches often lead to dependency drift, compatibility issues, and slow iteration cycles. The SDFP and ZVIC paradigms address these challenges by focusing on function signatures and runtime contract validation, enabling safer hot-reloads and more reliable code reuse. JustUse is a project that applies these paradigms to real-world distributed systems.
+ZVIC eliminates versioning, migration, and legacy compatibility. All compatibility is determined by structural and contextual analysis of types, protocols, and evidence. The model is designed for clarity, extensibility, and production-grade ergonomics.
 
 ---
 
-## 3. Goals & Requirements
+## 3. Key Innovations
 
-### Goals
-- Eliminate the need for semantic versioning in shared code
-- Enable safe, hot-reloadable modules
-- Provide runtime guarantees for interface compatibility
-- Facilitate rapid development and deployment cycles
+- **Kind Signatures:** Formal kind system for HKTs, with normalization and arity checks
+- **Trait-Style Protocols:** Attribute ownership and coherence registry for protocol safety
+- **Contextual Verification:** Static/dynamic context with proof obligation tracking
+- **Gradual Typing:** PartialType wrapper for incomplete or evolving types
+- **Pythonic API:** Decorators, transparent conversion, and REPL/debug support
 
 ---
 
 ## 4. Core Definitions
 
-- **Signature-Driven Functional Programming (SDFP):** A runtime programming paradigm where the behavior and lifecycle of functional code is governed by the structure of its function signatures, not by external configuration or versioning.
-- **Zero-Version Interface Contracts (ZVIC):** A paradigm for managing code compatibility without version numbers, relying on runtime verification of callable structure.
-- **JustUse:** A project that applies SDFP and ZVIC paradigms to enable safe, dynamic code reuse in distributed Python systems.
+- **KindSignature:** Formal descriptor of type constructor arity and structure (e.g., `* → * → *` for `dict`)
+- **ProtocolCoherence:** Registry and enforcement of attribute ownership for protocols
+- **VerificationContext:** Tracks static/dynamic mode and proof obligations
+- **PartialType:** Wrapper for types with unknown or partial information
+- **TypeRep:** Canonical, normalized representation of any type
 
 ---
 
@@ -47,6 +52,6 @@ Traditional versioning and interface management approaches often lead to depende
 | ZVIC Contracts       | [Spec 03: ZVIC Contracts](spec-03-ZVIC-Contracts.md)   |
 | Canonicalization     | [Spec 04: Canonicalization & Compatibility](spec-04-Canonicalization-Compatibility.md) |
 | Error Handling       | [Spec 03: ZVIC Contracts](spec-03-ZVIC-Contracts.md)   |
-| Migration Tooling    | [Spec 04: Canonicalization & Compatibility](spec-04-Canonicalization-Compatibility.md) |
+| Developer API        | [Spec 02: SDFP Principles](spec-02-SDFP-Principles.md) |
 
 ---
