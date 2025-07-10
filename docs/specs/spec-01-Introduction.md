@@ -44,7 +44,24 @@ ZVIC eliminates versioning, migration, and legacy compatibility. All compatibili
 
 ---
 
-## 5. Quick Reference
+## 5. Flow Overview
+
+```mermaid
+flowchart TD
+    A[Start] --> B1[Hash Module to avoid reloading unchanged code]
+    B1 --> B[Preliminary Import Module]
+    B --> C[Code Transform and Constraints Extraction]
+    C --> D[Canonicalization via AST unparse of Signatures]
+    D --> E[Hashing of Canonicalized Signatures to detect changes]
+    E --> F{Is Compatible?}
+    F -- Yes --> G[Proceed with Execution]
+    F -- No --> H[Generate Explainable Error]
+    H --> I[End]
+    G --> I
+```
+
+
+## 6. Quick Reference
 
 | Topic                | Spec Section                                  |
 |----------------------|-----------------------------------------------|
