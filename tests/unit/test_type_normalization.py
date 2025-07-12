@@ -137,11 +137,11 @@ def test_dataclass_type():
     result = normalize_type(Point)
     assert result.get("type") == "object"
     assert result.get("class") == "Point"
-    if isinstance(result.get("properties"), dict):
-        assert set(result["properties"].keys()) == {"x", "y"}
-        assert result["properties"]["x"]["type"] == "integer"
-    else:
-        assert False, "Expected 'properties' to be a dict"
+    assert isinstance(result.get("properties"), dict), (
+        "Expected 'properties' to be a dict"
+    )
+    assert set(result["properties"].keys()) == {"x", "y"}
+    assert result["properties"]["x"]["type"] == "integer"
 
 
 def test_pydantic_base_model():
@@ -149,11 +149,11 @@ def test_pydantic_base_model():
     assert result.get("type") == "object"
     assert result.get("class") == "User"
     # include both id/name/meta
-    if isinstance(result.get("properties"), dict):
-        assert set(result["properties"].keys()) == {"id", "name", "meta"}
-        assert result["properties"]["id"]["type"] == "integer"
-    else:
-        assert False, "Expected 'properties' to be a dict"
+    assert isinstance(result.get("properties"), dict), (
+        "Expected 'properties' to be a dict"
+    )
+    assert set(result["properties"].keys()) == {"id", "name", "meta"}
+    assert result["properties"]["id"]["type"] == "integer"
 
 
 def test_nested_pydantic():
@@ -161,12 +161,12 @@ def test_nested_pydantic():
     assert result.get("type") == "object"
     assert result.get("class") == "Profile"
     # nested user sub-schema
-    if isinstance(result.get("properties"), dict):
-        assert "user" in result["properties"]
-        assert result["properties"]["user"].get("class") == "User"
-        assert result["properties"]["active"].get("type") == "boolean"
-    else:
-        assert False, "Expected 'properties' to be a dict"
+    assert isinstance(result.get("properties"), dict), (
+        "Expected 'properties' to be a dict"
+    )
+    assert "user" in result["properties"]
+    assert result["properties"]["user"].get("class") == "User"
+    assert result["properties"]["active"].get("type") == "boolean"
 
 
 def test_fallback_custom_class():
@@ -185,13 +185,13 @@ def test_custom_class_with_annotations():
     # Should be treated as an object with properties
     assert result.get("type") == "object"
     assert result.get("class") == "CustomWithAnnotations"
-    if isinstance(result.get("properties"), dict):
-        assert "foo" in result["properties"]
-        assert result["properties"]["foo"].get("type") == "integer"
-        assert "bar" in result["properties"]
-        assert result["properties"]["bar"].get("type") == "string"
-    else:
-        assert False, "Expected 'properties' to be a dict"
+    assert isinstance(result.get("properties"), dict), (
+        "Expected 'properties' to be a dict"
+    )
+    assert "foo" in result["properties"]
+    assert result["properties"]["foo"].get("type") == "integer"
+    assert "bar" in result["properties"]
+    assert result["properties"]["bar"].get("type") == "string"
 
 
 class CustomWithAttributes:
