@@ -5,16 +5,6 @@ import ast
 from typing import Any
 
 
-def _raise_assert(obj: Any, expected: tuple[type, ...]) -> bool:
-    if len(expected) == 1:  # type: ignore
-        msg = f"Expected {expected}, instead got {type(obj).__name__} (value: {obj})"
-    else:
-        msg = msg = (
-            f"Expected one of {expected}, instead got {type(obj).__name__} (value: {obj})"
-        )
-    raise AssertionError(msg)
-
-
 def assumption(obj: Any, expected: type) -> bool:
     """
     Check if obj is an instance of expected type or any type in a union.
@@ -35,7 +25,12 @@ def assumption(obj: Any, expected: type) -> bool:
     for exp in types:
         if isinstance(obj, exp):
             return True
-    _raise_assert(obj, types)
+    msg = (
+        f"Expected {expected}, instead got {type(obj).__name__} (value: {obj})"
+        if len(types) == 1
+        else f"Expected one of {types}, instead got {type(obj).__name__} (value: {obj})"
+    )
+    raise AssertionError(msg)
 
 
 def normalize_constraint(expr: str) -> str:
