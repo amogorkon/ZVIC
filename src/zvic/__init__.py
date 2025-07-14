@@ -1,8 +1,15 @@
 from .main import (
     canonical_signature,
     canonicalize,
+    constrain_this_module,
     is_compatible,
 )
 from .utils import _
 
-__all__ = ["canonicalize", "is_compatible", "canonical_signature", "_"]
+__all__ = [
+    "canonicalize",
+    "is_compatible",
+    "canonical_signature",
+    "_",
+    "constrain_this_module",
+]

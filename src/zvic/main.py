@@ -2,12 +2,40 @@ import ast
 import inspect
 from pathlib import Path
 from types import ModuleType
-from typing import Any, get_args, get_origin, get_type_hints
+from typing import Any, Mapping, get_args, get_origin, get_type_hints
 
 from .annotation_constraints import AnnotateCallsTransformer
-from .utils import assumption, normalize_constraint
+from .utils import _, assumption, normalize_constraint
 
-type CANONICAL = dict[str, str | CANONICAL]
+type CANONICAL = Mapping[str, str | CANONICAL]
+
+
+def constrain_this_module():
+    """Rewrites the current module in-place with annotation constraints."""
+    frame = inspect.currentframe()
+    if frame is None or frame.f_back is None:
+        raise RuntimeError("Could not find caller frame")
+    caller_globals = frame.f_back.f_globals
+
+    # Inject zvic.utils._ into caller's globals if not already present
+    if "_" not in caller_globals:
+        caller_globals["_"] = _
+
+    # Prevent recursion: only transform if not already transformed
+    if caller_globals.get("__zvic_transformed__", False):
+        return
+    caller_globals["__zvic_transformed__"] = True
+
+    module_name = caller_globals["__name__"]
+    filename = caller_globals["__file__"]
+    with open(filename, "r", encoding="utf-8") as f:
+        source = f.read()
+    tree = ast.parse(source, filename=filename)
+    transformer = AnnotateCallsTransformer()
+    new_tree = transformer.visit(tree)
+    ast.fix_missing_locations(new_tree)
+    code = compile(new_tree, filename, "exec")
+    exec(code, caller_globals)
 
 
 def load_module(path: Path, module_name: str) -> ModuleType:
@@ -40,7 +68,7 @@ def canonicalize(obj: Any) -> CANONICAL:
     """
     if isinstance(obj, ModuleType):
         # Only include user-defined functions and classes (exclude built-ins, imports, and typing helpers)
-        result = {}
+        result: CANONICAL = {}
         for attr_name, attr in vars(obj).items():
             if attr_name == "Annotated":
                 continue
@@ -58,7 +86,7 @@ def canonicalize(obj: Any) -> CANONICAL:
                 result[attr_name] = canonicalize(attr)
         return result
     elif inspect.isclass(obj):
-        result = {}
+        result: CANONICAL = {}
         # If the class is callable (has a custom __call__), represent it by its __call__
         call_method = obj.__dict__.get("__call__")
         if call_method and inspect.isfunction(call_method):
@@ -79,12 +107,14 @@ def canonicalize(obj: Any) -> CANONICAL:
     elif callable(obj):
         # For any other callable (including functions), represent as a dict with a single '__call__' field
         call_method = getattr(obj, "__call__", None)
+        result: CANONICAL = {}
         if call_method and inspect.ismethod(call_method):
-            return {"__call__": canonical_signature(call_method)}
+            result["__call__"] = canonical_signature(call_method)
         elif call_method and inspect.isfunction(call_method):
-            return {"__call__": canonical_signature(call_method)}
+            result["__call__"] = canonical_signature(call_method)
         else:
-            return {"__call__": canonical_signature(obj)}
+            result["__call__"] = canonical_signature(obj)
+        return result
     else:
         return canonical_signature(obj)
 
@@ -98,9 +128,9 @@ def canonical_signature(func: Any, name: str | None = None) -> CANONICAL:
             return s.replace("typing.", "")
         return s
 
-    positional_only = []
-    positional_or_keyword = []
-    keyword_only = []
+    positional_only: list[dict[str, Any]] = []
+    positional_or_keyword: list[dict[str, Any]] = []
+    keyword_only: list[dict[str, Any]] = []
     # Use runtime type hints for robust Annotated extraction
     try:
         type_hints = get_type_hints(func, include_extras=True)
@@ -108,7 +138,6 @@ def canonical_signature(func: Any, name: str | None = None) -> CANONICAL:
         type_hints = {}
     for param in sig.parameters.values():
         param_info = {}
-        constraint = None
         ann = type_hints.get(param.name, param.annotation)
         origin = get_origin(ann)
         args = get_args(ann)
@@ -119,7 +148,7 @@ def canonical_signature(func: Any, name: str | None = None) -> CANONICAL:
             else:
                 param_info["type"] = strip_typing_prefix(str(base_type))
             param_info["constraint"] = normalize_constraint(str(args[1]))
-        elif ann != inspect._empty:
+        elif ann != inspect.Signature.empty:
             if hasattr(ann, "__module__") and ann.__module__ == "typing":
                 param_info["type"] = strip_typing_prefix(str(ann))
             elif hasattr(ann, "__name__"):
@@ -133,7 +162,7 @@ def canonical_signature(func: Any, name: str | None = None) -> CANONICAL:
             inspect.Parameter.KEYWORD_ONLY,
         ):
             param_info["name"] = param.name
-        if param.default != inspect._empty:
+        if param.default != inspect.Signature.empty:
             param_info["default"] = param.default
         if param.kind == inspect.Parameter.POSITIONAL_ONLY:
             positional_only.append(param_info)
@@ -147,7 +176,7 @@ def canonical_signature(func: Any, name: str | None = None) -> CANONICAL:
             if "type" in p and p["type"] is None:
                 del p["type"]
     keyword_only = sorted(keyword_only, key=lambda p: p["name"])
-    params = {
+    params: dict[str, list[dict[str, Any]]] = {
         "positional_only": positional_only,
         "positional_or_keyword": positional_or_keyword,
         "keyword_only": keyword_only,
@@ -167,7 +196,7 @@ def canonical_signature(func: Any, name: str | None = None) -> CANONICAL:
         else:
             return_info["type"] = strip_typing_prefix(str(base_type))
         return_info["constraint"] = normalize_constraint(str(args[1]))
-    elif return_ann != inspect._empty:
+    elif return_ann != inspect.Signature.empty:
         if hasattr(return_ann, "__module__") and return_ann.__module__ == "typing":
             return_info["type"] = strip_typing_prefix(str(return_ann))
         elif hasattr(return_ann, "__name__"):
