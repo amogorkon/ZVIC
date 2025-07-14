@@ -249,9 +249,19 @@ Transitioning between types is tricky. While theoretically widening the type may
 ## 3. Constraint Signature Compatibility
 
 ### 3.1. Constraint Signature Kinds
-**Currently not supported**
+**Currently not tested against**
 - No constraint
 - Simple constraint (e.g., _ < 10)
 - Multiple constraints (e.g., _ > 0 and _ < 10)
 - Complex expressions (e.g., len(_) > 5)
 - Placeholder usage (_)
+
+
+| ID | Scenario | Example | Compatible? | Reasoning
+|----|----------|---------|-------------|----------------
+| C0a | No constraint in A, no constraint in B | A(a:int) -> B(a:int) | ✓ | No constraints to break compatibility
+| C0b | same constraint in A and B | A(a:int(<10)) -> B(a:int(<10)) | ✓ | Exact match, no issues
+| C1 | No constraint in A, any in B | A(a:int) -> B(a:int(<20)) | ✗ | passing anything to A outside constraints will break B
+| C2 | Any constraint in A, no constraint in B | A(a:int(<10)) -> B(a:int) | ✓ | No constraints in B, so A can pass anything
+| C3 | wider constraint in B | A(a:int(<10)) -> B(a:int(<20)) | ✓ | B accepts more than A, so A can pass anything
+| C4 | narrower constraint in B | A(a:int(<20)) -> B(a:int(<10)) | ✗ | some inputs that A accepts will not be accepted by B
