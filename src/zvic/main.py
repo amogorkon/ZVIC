@@ -18,15 +18,18 @@ def constrain_this_module():
     caller_globals = frame.f_back.f_globals
 
     # Inject zvic.utils._ into caller's globals if not already present
+    from .utils import assumption
+
     if "_" not in caller_globals:
         caller_globals["_"] = _
+    # Inject zvic.utils.assumption into caller's globals if not already present
+    if "assumption" not in caller_globals:
+        caller_globals["assumption"] = assumption
 
     # Prevent recursion: only transform if not already transformed
     if caller_globals.get("__zvic_transformed__", False):
         return
     caller_globals["__zvic_transformed__"] = True
-
-    module_name = caller_globals["__name__"]
     filename = caller_globals["__file__"]
     with open(filename, "r", encoding="utf-8") as f:
         source = f.read()
