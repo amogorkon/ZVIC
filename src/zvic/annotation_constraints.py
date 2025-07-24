@@ -26,18 +26,31 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
             if arg.annotation:
                 new_ann = self._transform_ann(arg.annotation)
                 # If annotation is Annotated with a constraint, extract it
+                param_type = None
                 if (
                     isinstance(new_ann, ast.Subscript)
                     and getattr(new_ann.value, "id", None) == "Annotated"
-                    and isinstance(new_ann.slice, ast.Tuple)
-                    and len(new_ann.slice.elts) == 2
-                    and isinstance(new_ann.slice.elts[1], ast.Constant)
-                    and new_ann.slice.elts[1].value
                 ):
-                    if constraint := new_ann.slice.elts[1].value:
-                        # Replace _ with the argument name in the constraint
-                        param_constraint = str(constraint).replace("_", arg.arg)
-                        constraints.append(param_constraint)
+                    # Extract type and constraint
+                    if (
+                        isinstance(new_ann.slice, ast.Tuple)
+                        and len(new_ann.slice.elts) == 2
+                    ):
+                        base_type_node = new_ann.slice.elts[0]
+                        constraint_node = new_ann.slice.elts[1]
+                        # Try to get type name from base_type_node
+                        if isinstance(base_type_node, ast.Name):
+                            param_type = base_type_node.id
+                        elif isinstance(base_type_node, ast.Attribute):
+                            param_type = ast.unparse(base_type_node)
+                        constraint = (
+                            constraint_node.value
+                            if isinstance(constraint_node, ast.Constant)
+                            else None
+                        )
+                        if constraint:
+                            param_constraint = str(constraint).replace("_", arg.arg)
+                            constraints.append((arg.arg, param_type, param_constraint))
                 arg.annotation = ast.copy_location(new_ann, arg.annotation)
         return_constraint = None
         if node.returns:
@@ -55,23 +68,47 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
             node.returns = ast.copy_location(new_ret, node.returns)
         # Insert assert statements for constraints if __debug__ is True
         if constraints:
-            # Compose a single assertion for each constraint
-            for constraint in constraints:
-                # Parse the constraint expression for the assert
+            # Compose a type assertion and constraint assertion for each parameter
+            for param_name, param_type, constraint in reversed(constraints):
+                # Type assertion first
+                type_if = None
+                if param_type:
+                    type_assert = ast.Assert(
+                        test=ast.Call(
+                            func=ast.Name(id="assumption", ctx=ast.Load()),
+                            args=[
+                                ast.Name(id=param_name, ctx=ast.Load()),
+                                ast.Name(id=param_type, ctx=ast.Load()),
+                            ],
+                            keywords=[],
+                        ),
+                        msg=ast.Constant(
+                            value=f"Type assertion failed for {param_name}: expected {param_type}"
+                        ),
+                    )
+                    type_if = ast.If(
+                        test=ast.Name(id="__debug__", ctx=ast.Load()),
+                        body=[type_assert],
+                        orelse=[],
+                    )
+                # Constraint assertion
                 expr_ast = ast.parse(str(constraint), mode="eval")
                 constraint_expr = expr_ast.body
-                # Add the constraint as the assertion message
                 assert_node = ast.Assert(
                     test=constraint_expr,
                     msg=ast.Constant(value=f"'{constraint}' not satisfied."),
                 )
-                # Wrap in if __debug__:
                 debug_if = ast.If(
                     test=ast.Name(id="__debug__", ctx=ast.Load()),
                     body=[assert_node],
                     orelse=[],
                 )
-                node.body.insert(0, debug_if)
+                # Insert type_if first, then debug_if, so type assertion runs before constraint assertion
+                if type_if:
+                    node.body.insert(0, debug_if)
+                    node.body.insert(0, type_if)
+                else:
+                    node.body.insert(0, debug_if)
 
         if return_constraint:
             # Replace _ with a unique variable name
