@@ -48,7 +48,7 @@ B is compatible with A iff:
 
     `B_min <= A_min` and `B_max >= A_max`
 
-| ID | Scenario                                  |   Example                 |  Compatible?
+| ID | Scenario                                 |   Example                 |  Compatible?
 |----|-------------------------------------------|---------------------------|--------
 | P1| Same parameters (names irrelevant)        | A(a,b,/) -> B(x, y,/)     | ✓
 | P2| Additional required args in B             | A(a, b,/) -> B(x, y, z,/) | ✗
@@ -122,15 +122,15 @@ B is compatible with A if all the following hold:
 
 | ID | Scenario                                  | Example                     | Compatible?
 |----|-----------------------------------------------|-----------------------------|-------------|
-|K1| Same args, same names                     | A(*, a, b) -> B(*, a, b)    | ✓
-|K2| Same count, different names               | A(*, a, b) -> B(*, x, y) | ✗
-|K3| Additional required args in B             | A(*, a, b) -> B(*, a, b, c) | ✗
+|K1| Same args, same names                     | A(*, a, b) -> B(*, a, b)      | ✓
+|K2| Same count, different names               | A(*, a, b) -> B(*, x, y)      | ✗
+|K3| Additional required args in B             | A(*, a, b) -> B(*, a, b, c)   | ✗
 |K4| Additional optional args in B             | A(*, a, b) -> B(*, a, b, c=0) | ✓
-|K5| Fewer required args in B                  | A(*, a, b) -> B(*, a) | ✗
+|K5| Fewer required args in B                  | A(*, a, b) -> B(*, a)         | ✗
 |K6| Fewer total args in B                     | A(*, a, b=1, c=2) -> B(*, a, b=1) | ✗
 |K7| Fewer required, more optional             | A(*, a, b, c=3) -> B(*, a, b=2, c=3) | ✓
-|K8| Same names, reordered                     | A(*, a, b) -> B(*, b, a) | ✓
-|K9| A uses optional args, B requires them     | A(*, a, b=1) -> B(*, a, b) | ✗
+|K8| Same names, reordered                     | A(*, a, b) -> B(*, b, a)      | ✓
+|K9| A uses optional args, B requires them     | A(*, a, b=1) -> B(*, a, b)    | ✗
 
 
 
@@ -156,32 +156,32 @@ Then B is structurally compatible with A iff:
 
 3. B does not introduce any required keyword-only parameters (A never passes keywords) (You may add keyword-only params only if they have defaults, or use **kwargs)
 
-| ID  | Scenario       | Example                     | Compatible? | Reasoning
-|-----|----------------|-----------------------------|-------------|----------
-|AP1|	*args only|	A(a, b, /) → B(*args)|	✓|	0 ≤ 2 + *args handles positions
-|AP2|	*args + prefix|	A(a, b, /) → B(x, *args)|	✓| 	1 ≤ 2 + *args handles overflow
-|AP3|	**kwargs only|	A(a, b, /) → B(**kwargs)|	✗|	No *args + 0 < 2
-|AP4|	*args + **kwargs|	A(a, b, /) → B(*args, **kwargs)|	✓|	0 ≤ 2 + *args handles positions
-|AP5|	Insufficient fixed + **kwargs|	A(a, b, /) → B(a=1, **kwargs)|	✗|	No *args + 1 < 2
-|AP6|	Optional keyword-only alone|	A(a, b, /) → B(*, k=5)|	✗|	No *args + 0 < 2
-|AP7|	Required keyword-only|	A(a, b, /) → B(*args, *, k)|	✗|	Required keyword-only k
-|AP8|	Fixed params match A_max|	A(a, b, /) → B(x, y)|	✓|	2 ≤ 2 + 2 ≥ 2
-|AP9|	Optional params + **kwargs|	A(a, b, /) → B(x, y=1, **kwargs)|	✓|	1 ≤ 2 + 2 ≥ 2
-|AP10|	✓ Optional keyword-only + *args|	A(a, b, /) → B(*args, k=5)|	✓|	0 ≤ 2 + *args handles positions
-|AP11|	✓ Zero args evolution|	A(/) → B(*, k=5)|	✓|	A_max=0, 0 ≥ 0
+| ID  | Scenario       | Example                                          | Compatible? | Reasoning
+|-----|----------------|--------------------------------------------------|-------------|----------
+|AP1|	*args only|	A(a, b, /) → B(*args)                                 | ✓           | 0 ≤ 2 + *args handles positions
+|AP2|	*args + prefix|	A(a, b, /) → B(x, *args)                          |	✓           | 1 ≤ 2 + *args handles overflow
+|AP3|	**kwargs only|	A(a, b, /) → B(**kwargs)                          |	✗           | No *args + 0 < 2
+|AP4|	*args + **kwargs|	A(a, b, /) → B(*args, **kwargs)               |	✓           | 0 ≤ 2 + *args handles positions
+|AP5|	Insufficient fixed + **kwargs|	A(a, b, /) → B(a=1, **kwargs)     |	✗           | No *args + 1 < 2
+|AP6|	Optional keyword-only alone|	A(a, b, /) → B(*, k=5)            |	✗           | No *args + 0 < 2
+|AP7|	Required keyword-only|	A(a, b, /) → B(*args, k)                  |	✗           | Required keyword-only k
+|AP8|	Fixed params match A_max|	A(a, b, /) → B(x, y)                  |	✓           | 2 ≤ 2 + 2 ≥ 2
+|AP9|	Optional params + **kwargs|	A(a, b, /) → B(x, y=1, **kwargs)      |	✓           | 1 ≤ 2 + 2 ≥ 2
+|AP10|	✓ Optional keyword-only + *args|	A(a, b, /) → B(*args, k=5)    |	✓           |  0 ≤ 2 + *args handles positions
+|AP11|	✓ Zero args evolution|	A() → B(*, k=5)                           |	✓           | A_max=0, 0 ≥ 0
 
 ### 1.2.5. Compatibility Matrix: *args/**kwargs with Positional & Keyword
 
-|ID | Scenario       | Example                     | Compatible? | Reasoning
-|-----|----------------|-----------------------------|-------------|----------
-|APK1|	*args only|	A(a, b) → B(*args)|	X|	Fails keyword calls: A(a=1,b=2) → B(a=1,b=2) raises TypeError (unexpected keyword)
-|APK2|	*args + prefix|	A(a, b) → B(x, *args)|	X| 	Fails keyword calls: A(a=1,b=2) → B(x=1,b=2) fails (b unexpected)
+|ID | Scenario       | Example                                            | Compatible? | Reasoning
+|-----|----------------|--------------------------------------------------|-------------|----------
+|APK1|	*args only|	A(a, b) → B(*args)                                    |  X	        | Fails keyword calls: A(a=1,b=2) → B(a=1,b=2) raises TypeError (unexpected keyword)
+|APK2|	*args + prefix|	A(a, b) → B(x, *args)                             |	X           | Fails keyword calls: A(a=1,b=2) → B(x=1,b=2) fails (b unexpected)
 |APK3|	**kwargs only|	A(a, b) → B(**kwargs)|    ✗| Fails positional calls: A(1,2) → B(1,2) raises TypeError
 |APK4|	*args + **kwargs|	A(a, b) → B(*args, **kwargs)|	✓|	0 ≤ 2 & *args handles positions
 |APK5|	Insufficient fixed + **kwargs|	A(a, b) → B(a=1, **kwargs)|	✗|	No *args & 1 < 2
-|APK6|	Required keyword-only|	A(a, b) → B(*args, *, k)|	✗|	Required keyword-only k
-|APK7|	Optional params + **kwargs|	A(a, b) → B(x, y=1, **kwargs)|	✓|	1 ≤ 2 & 2 ≥ 2
-|APK8|	Optional keyword-only + *args|	A(a, b) → B(*args, k=5)|	✓|	0 ≤ 2 & *args handles positions
+|APK6|	Required keyword-only|	A(a, b) → B(*args, k)  |	✗|	Required keyword-only k
+|APK7|	Optional params + **kwargs|	A(a, b) → B(x, y=1, **kwargs)|	X|	1 ≤ 2 & 2 ≥ 2, but fails keyword calls: A(a=1,b=2) → B(a=1,b=2) raises TypeError: B() missing 1 required positional argument: 'x'
+|APK8|	Optional keyword-only + *args|	A(a, b) → B(*args, k=5)|	X|	0 ≤ 2 & *args handles positions but kwargs of A are not handled
 
 If B removes *args or **kwargs that A had, it cannot accept the same variety of calls, and thus breaks compatibility.
 
@@ -198,7 +198,7 @@ Assume Signature A is: A(*, a, b) — i.e., it accepts keyword-only a and b.
 |AK3|	**kwargs only	|(**kwargs)	|✓|	**kwargs catches all keywords a, b.
 |AK4|	*args, **kwargs	|(*args, **kwargs)	|✓|	**kwargs absorbs keywords; *args is irrelevant.
 |AK5|	Declares a, plus **kwargs|	(a=1, **kwargs)	|✓|	B declares a, and **kwargs absorbs b.
-|AK6|	Adds required kw-only param|	(*args, *, k)	|✗|	k is required but not supplied by A.
+|AK6|	Adds required kw-only param|	(*args, k)	|✗|	k is required but not supplied by A.
 |AK7|	Fixed param not in A|	(x, y=1, **kwargs)	|✗|	B requires x, which A does not provide.
 |AK8|	Optional kw-only + *args|	(*args, k=5)	|✗|	No **kwargs to catch a, b; k is unused.
 
@@ -260,8 +260,8 @@ Transitioning between types is tricky. While theoretically widening the type may
 | ID | Scenario | Example | Compatible? | Reasoning
 |----|----------|---------|-------------|----------------
 | C0a | No constraint in A, no constraint in B | A(a:int) -> B(a:int) | ✓ | No constraints to break compatibility
-| C0b | same constraint in A and B | A(a:int(<10)) -> B(a:int(<10)) | ✓ | Exact match, no issues
-| C1 | No constraint in A, any in B | A(a:int) -> B(a:int(<20)) | ✗ | passing anything to A outside constraints will break B
-| C2 | Any constraint in A, no constraint in B | A(a:int(<10)) -> B(a:int) | ✓ | No constraints in B, so A can pass anything
-| C3 | wider constraint in B | A(a:int(<10)) -> B(a:int(<20)) | ✓ | B accepts more than A, so A can pass anything
-| C4 | narrower constraint in B | A(a:int(<20)) -> B(a:int(<10)) | ✗ | some inputs that A accepts will not be accepted by B
+| C0b | same constraint in A and B | A(a:int(_ <10)) -> B(a:int(_ <10)) | ✓ | Exact match, no issues
+| C1 | No constraint in A, any in B | A(a:int) -> B(a:int(_ <20)) | ✗ | passing anything to A outside constraints will break B
+| C2 | Any constraint in A, no constraint in B | A(a:int(_ <10)) -> B(a:int) | ✓ | No constraints in B, so A can pass anything
+| C3 | wider constraint in B | A(a:int(_ <10)) -> B(a:int(_<20)) | ✓ | B accepts more than A, so A can pass anything
+| C4 | narrower constraint in B | A(a:int( _ <20)) -> B(a:int(_ <10)) | ✗ | some inputs that A accepts will not be accepted by B
