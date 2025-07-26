@@ -37,6 +37,10 @@ def constrain_this_module():
     transformer = AnnotateCallsTransformer()
     new_tree = transformer.visit(tree)
     ast.fix_missing_locations(new_tree)
+    # Print the transformed code for inspection
+    print("\n===== Transformed Code =====\n")
+    print(ast.unparse(new_tree))
+    print("\n===== End Transformed Code =====\n")
     code = compile(new_tree, filename, "exec")
     exec(code, caller_globals)
 
@@ -51,7 +55,9 @@ def load_module(path: Path, module_name: str) -> ModuleType:
     ast.fix_missing_locations(transformed_tree)
     assert assumption(transformed_tree, ast.Module)
     code = compile(transformed_tree, str(path), "exec")
+
     mod = ModuleType(module_name)
+    mod.__dict__["__file__"] = str(path)
     exec(code, mod.__dict__)
 
     setattr(mod, "__original_source__", original_source)

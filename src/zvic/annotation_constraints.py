@@ -68,47 +68,52 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
             node.returns = ast.copy_location(new_ret, node.returns)
         # Insert assert statements for constraints if __debug__ is True
         if constraints:
-            # Compose a type assertion and constraint assertion for each parameter
-            for param_name, param_type, constraint in reversed(constraints):
-                # Type assertion first
-                type_if = None
-                if param_type:
-                    type_assert = ast.Assert(
-                        test=ast.Call(
-                            func=ast.Name(id="assumption", ctx=ast.Load()),
-                            args=[
-                                ast.Name(id=param_name, ctx=ast.Load()),
-                                ast.Name(id=param_type, ctx=ast.Load()),
-                            ],
-                            keywords=[],
-                        ),
-                        msg=ast.Constant(
-                            value=f"Type assertion failed for {param_name}: expected {param_type}"
-                        ),
-                    )
-                    type_if = ast.If(
-                        test=ast.Name(id="__debug__", ctx=ast.Load()),
-                        body=[type_assert],
-                        orelse=[],
-                    )
-                # Constraint assertion
-                expr_ast = ast.parse(str(constraint), mode="eval")
-                constraint_expr = expr_ast.body
-                assert_node = ast.Assert(
-                    test=constraint_expr,
-                    msg=ast.Constant(value=f"'{constraint}' not satisfied."),
-                )
-                debug_if = ast.If(
-                    test=ast.Name(id="__debug__", ctx=ast.Load()),
-                    body=[assert_node],
-                    orelse=[],
-                )
-                # Insert type_if first, then debug_if, so type assertion runs before constraint assertion
-                if type_if:
-                    node.body.insert(0, debug_if)
-                    node.body.insert(0, type_if)
-                else:
-                    node.body.insert(0, debug_if)
+            # Compose a PEP 316 docstring for CrossHair
+            doc_lines = []
+            for param_name, _, constraint in constraints:
+                doc_lines.append(f"pre: {constraint}")
+            if return_constraint:
+                doc_lines.append(f"post: {return_constraint}")
+            docstring = "\n".join(doc_lines) if doc_lines else None
+            # Only insert assertions if __debug__ is True at transformation time
+            type_asserts = []
+            constraint_asserts = []
+            if __debug__:
+                for param_name, param_type, _ in constraints:
+                    if param_type:
+                        type_asserts.append(ast.Assert(
+                            test=ast.Call(
+                                func=ast.Name(id="assumption", ctx=ast.Load()),
+                                args=[
+                                    ast.Name(id=param_name, ctx=ast.Load()),
+                                    ast.Name(id=param_type, ctx=ast.Load()),
+                                ],
+                                keywords=[],
+                            ),
+                            msg=ast.Constant(
+                                value=f"Type assertion failed for {param_name}: expected {param_type}"
+                            ),
+                        ))
+                for param_name, _, constraint in constraints:
+                    expr_ast = ast.parse(str(constraint), mode="eval")
+                    constraint_expr = expr_ast.body
+                    constraint_asserts.append(ast.Assert(
+                        test=constraint_expr,
+                        msg=ast.Constant(value=f"'{constraint}' not satisfied."),
+                    ))
+            # Compose new body: docstring, type asserts, constraint asserts, then rest
+            new_body = []
+            if docstring:
+                doc_node = ast.Expr(value=ast.Constant(value=docstring))
+                new_body.append(doc_node)
+            new_body.extend(type_asserts)
+            new_body.extend(constraint_asserts)
+            # Add the rest of the original body, skipping any old docstring
+            orig_body = node.body
+            if orig_body and isinstance(orig_body[0], ast.Expr) and isinstance(orig_body[0].value, ast.Constant) and isinstance(orig_body[0].value.value, str):
+                orig_body = orig_body[1:]
+            new_body.extend(orig_body)
+            node.body = new_body
 
         if return_constraint:
             # Replace _ with a unique variable name
@@ -128,17 +133,14 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
                     assert_node = ast.Assert(
                         test=expr_ast.body,
                         msg=ast.Constant(
-                            value=f"Return constraint '{return_constraint}' not satisfied."
+                            value=f"Return constraint '{return_constraint}' not satisfied (_ = {ret_var}))."
                         ),
                     )
-                    debug_if = ast.If(
-                        test=ast.Name(id="__debug__", ctx=ast.Load()),
-                        body=[assert_node],
-                        orelse=[],
-                    )
-                    # Return ret_var
-                    ret_stmt = ast.Return(value=ast.Name(id=ret_var, ctx=ast.Load()))
-                    new_body.extend([assign, debug_if, ret_stmt])
+                    # Only insert return assertion if __debug__ is True at transformation time
+                    if __debug__:
+                        new_body.extend([assign, assert_node, ast.Return(value=ast.Name(id=ret_var, ctx=ast.Load()))])
+                    else:
+                        new_body.append(stmt)
                 else:
                     new_body.append(stmt)
             node.body = new_body
@@ -203,13 +205,20 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
             "Expected ast.Module after generic_visit"
         )
         if self.need_imports:
-            # inject `from typing import Annotated`
+            # Find the last __future__ import
+            insert_at = 0
+            for idx, stmt in enumerate(new_node.body):
+                if (
+                    isinstance(stmt, ast.ImportFrom)
+                    and stmt.module == "__future__"
+                ):
+                    insert_at = idx + 1
             imp = ast.ImportFrom(
                 module="typing",
                 names=[ast.alias(name="Annotated", asname=None)],
                 level=0,
             )
-            new_node.body.insert(0, imp)
+            new_node.body.insert(insert_at, imp)
         return new_node
 
 
