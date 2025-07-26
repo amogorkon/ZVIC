@@ -9,7 +9,7 @@ def foo(x: int(_ > 0), y: int(_ > x)) -> int:
     return x, y
 
 
-def bar(a: int(_ % 2 == 0), b: int(_ > a and _ < 10)) -> int:
+def bar(a: int(_ % 2 == 0), b: int(_ > a and _ < 10)) -> int(_ < 10):
     return a + b
 
 

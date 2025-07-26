@@ -81,26 +81,30 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
             if __debug__:
                 for param_name, param_type, _ in constraints:
                     if param_type:
-                        type_asserts.append(ast.Assert(
-                            test=ast.Call(
-                                func=ast.Name(id="assumption", ctx=ast.Load()),
-                                args=[
-                                    ast.Name(id=param_name, ctx=ast.Load()),
-                                    ast.Name(id=param_type, ctx=ast.Load()),
-                                ],
-                                keywords=[],
-                            ),
-                            msg=ast.Constant(
-                                value=f"Type assertion failed for {param_name}: expected {param_type}"
-                            ),
-                        ))
+                        type_asserts.append(
+                            ast.Assert(
+                                test=ast.Call(
+                                    func=ast.Name(id="assumption", ctx=ast.Load()),
+                                    args=[
+                                        ast.Name(id=param_name, ctx=ast.Load()),
+                                        ast.Name(id=param_type, ctx=ast.Load()),
+                                    ],
+                                    keywords=[],
+                                ),
+                                msg=ast.Constant(
+                                    value=f"Type assertion failed for {param_name}: expected {param_type}"
+                                ),
+                            )
+                        )
                 for param_name, _, constraint in constraints:
                     expr_ast = ast.parse(str(constraint), mode="eval")
                     constraint_expr = expr_ast.body
-                    constraint_asserts.append(ast.Assert(
-                        test=constraint_expr,
-                        msg=ast.Constant(value=f"'{constraint}' not satisfied."),
-                    ))
+                    constraint_asserts.append(
+                        ast.Assert(
+                            test=constraint_expr,
+                            msg=ast.Constant(value=f"'{constraint}' not satisfied."),
+                        )
+                    )
             # Compose new body: docstring, type asserts, constraint asserts, then rest
             new_body = []
             if docstring:
@@ -110,40 +114,48 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
             new_body.extend(constraint_asserts)
             # Add the rest of the original body, skipping any old docstring
             orig_body = node.body
-            if orig_body and isinstance(orig_body[0], ast.Expr) and isinstance(orig_body[0].value, ast.Constant) and isinstance(orig_body[0].value.value, str):
+            if (
+                orig_body
+                and isinstance(orig_body[0], ast.Expr)
+                and isinstance(orig_body[0].value, ast.Constant)
+                and isinstance(orig_body[0].value.value, str)
+            ):
                 orig_body = orig_body[1:]
             new_body.extend(orig_body)
             node.body = new_body
 
         if return_constraint:
             # Replace _ with a unique variable name
-            ret_var = "__zvic_retval"
+            ret_var = "__return__"
             constraint_expr_str = return_constraint.replace("_", ret_var)
-            # Wrap the entire function body to check the return value
-            new_body = []
-            for stmt in node.body:
-                if isinstance(stmt, ast.Return):
+
+            # Recursively transform all return statements in the function body
+            class ReturnTransformer(ast.NodeTransformer):
+                def visit_Return(self, return_node):
                     # Assign return value to ret_var
                     assign = ast.Assign(
                         targets=[ast.Name(id=ret_var, ctx=ast.Store())],
-                        value=stmt.value,
+                        value=return_node.value,
                     )
                     # Assert on ret_var
                     expr_ast = ast.parse(str(constraint_expr_str), mode="eval")
                     assert_node = ast.Assert(
                         test=expr_ast.body,
                         msg=ast.Constant(
-                            value=f"Return constraint '{return_constraint}' not satisfied (_ = {ret_var}))."
+                            value=f"Return constraint '{return_constraint}' not satisfied (_ = {ret_var})"
                         ),
                     )
                     # Only insert return assertion if __debug__ is True at transformation time
                     if __debug__:
-                        new_body.extend([assign, assert_node, ast.Return(value=ast.Name(id=ret_var, ctx=ast.Load()))])
+                        return [
+                            assign,
+                            assert_node,
+                            ast.Return(value=ast.Name(id=ret_var, ctx=ast.Load())),
+                        ]
                     else:
-                        new_body.append(stmt)
-                else:
-                    new_body.append(stmt)
-            node.body = new_body
+                        return [return_node]
+
+            node.body = ReturnTransformer().visit(ast.Module(body=node.body)).body
         return node
 
     def _transform_ann(self, ann: ast.AST) -> ast.expr:
@@ -208,10 +220,7 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
             # Find the last __future__ import
             insert_at = 0
             for idx, stmt in enumerate(new_node.body):
-                if (
-                    isinstance(stmt, ast.ImportFrom)
-                    and stmt.module == "__future__"
-                ):
+                if isinstance(stmt, ast.ImportFrom) and stmt.module == "__future__":
                     insert_at = idx + 1
             imp = ast.ImportFrom(
                 module="typing",
