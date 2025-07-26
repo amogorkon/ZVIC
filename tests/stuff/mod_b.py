@@ -389,6 +389,3 @@ def C3(a: int(_ < 20)):
 # C4: narrower constraint in B
 def C4(a: int(_ < 10)):
     pass
-
-
-# End of Module B

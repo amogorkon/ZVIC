@@ -7,6 +7,7 @@ from .main import (
     canonicalize,
     constrain_this_module,
     is_compatible,
+    load_module,
 )
 from .utils import _
 
@@ -20,4 +21,5 @@ __all__ = [
     "SignatureIncompatible",
     "is_signature_compatible",
     "is_type_compatible",
+    "load_module",
 ]

@@ -7,7 +7,7 @@ import sys
 from collections import namedtuple
 from dataclasses import dataclass
 from inspect import Parameter, Signature
-from typing import Any
+from typing import Annotated, Any, get_args, get_origin
 
 
 def assumption(obj: Any, expected: type) -> bool:
@@ -271,15 +271,28 @@ def prepare_scenario(
 
 
 def prepare_params(sig: Signature) -> Params:
+    def extract_constraint(annotation):
+        # If annotation is Annotated, constraint is in metadata
+        if get_origin(annotation) is Annotated:
+            args = get_args(annotation)
+            # args[0] is the type, args[1:] are metadata (constraints, etc.)
+            if len(args) > 1:
+                # Use the first metadata as constraint (stringify for now)
+                print(
+                    f"DEBUG: Annotated param annotation={annotation}, constraint={args[1]}"
+                )
+                return str(args[1])
+        print(f"DEBUG: Non-Annotated param annotation={annotation}")
+        return None
+
     params = [
         {
             "name": p.name,
             "kind": p.kind.name,
             "type": p.annotation,  # Store the actual annotation object
-            "type_name": get_type_name(
-                p.annotation
-            ),  # Optionally keep the name for debugging
+            "type_name": get_type_name(p.annotation),
             "default": get_default(p.default),
+            "constraint": extract_constraint(p.annotation),
         }
         for p in sig.parameters.values()
     ]
