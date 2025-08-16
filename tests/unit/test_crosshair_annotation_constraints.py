@@ -1,9 +1,9 @@
 from zvic import _, constrain_this_module
 
-constrain_this_module()
+# print(constrain_this_module())
 
 
-def foo(x: int(_ > 0), y: int(_ > )) -> int(_ > 0 and _ < 100):
+def foo(x: int(_ > 0), y: int(_ > 10)) -> int(_ > 0 and _ < 0):
     return x - y
 
 

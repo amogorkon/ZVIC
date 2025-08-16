@@ -270,32 +270,121 @@ def prepare_scenario(
     )
 
 
-def prepare_params(sig: Signature) -> Params:
+def prepare_params(sig: Signature, func=None) -> Params:
     def extract_constraint(annotation):
-        # If annotation is Annotated, constraint is in metadata
-        if get_origin(annotation) is Annotated:
+        # Handle typing.Annotated (including typing._AnnotatedAlias)
+        import typing
+        origin = get_origin(annotation)
+        print(f"extract_constraint DEBUG: annotation={annotation}, get_origin={origin}, Annotated={Annotated}, typing.Annotated={typing.Annotated}")
+        # Handle runtime typing._AnnotatedAlias
+        if origin is Annotated or origin is typing.Annotated:
             args = get_args(annotation)
-            # args[0] is the type, args[1:] are metadata (constraints, etc.)
             if len(args) > 1:
-                # Use the first metadata as constraint (stringify for now)
-                print(
-                    f"DEBUG: Annotated param annotation={annotation}, constraint={args[1]}"
-                )
-                return str(args[1])
+                constraint = str(args[1])
+                # Sanitize: remove leading/trailing quotes and spaces
+                constraint_clean = constraint.strip().strip("'\"")
+                print(f"DEBUG: Annotated param annotation={annotation}, constraint(raw)={args[1]}, constraint(str)={constraint}, constraint(clean)={constraint_clean}, type={type(args[1])}")
+                return constraint_clean
+        # Handle string-based Annotated annotations (e.g., "Annotated[int, '_ < 10']")
+        if isinstance(annotation, str) and annotation.startswith("Annotated["):
+            # Try to extract the constraint from the string
+            try:
+                # Find the first comma after the opening bracket
+                first_comma = annotation.find(",")
+                if first_comma != -1:
+                    # The constraint is after the comma, strip brackets and whitespace
+                    constraint = annotation[first_comma+1:].rstrip("] ")
+                    # Remove any surrounding quotes and spaces
+                    constraint_clean = constraint.strip().strip("'\"")
+                    print(f"DEBUG: String-annotated param annotation={annotation}, constraint(raw)={constraint}, constraint(clean)={constraint_clean}")
+                    return constraint_clean
+            except Exception as e:
+                print(f"extract_constraint: failed to parse string annotation: {e}")
         print(f"DEBUG: Non-Annotated param annotation={annotation}")
         return None
 
-    params = [
-        {
+    # DEBUG: Print all parameter constraints for this function
+    print(f"prepare_params DEBUG: func={getattr(func, '__name__', func)}")
+
+
+    def resolve_annotation(annotation, globalns=None):
+        # If annotation is already a type, return as is
+        if not isinstance(annotation, str):
+            return annotation
+        import sys
+        tried = set()
+        # Try function's globals
+        if globalns is not None:
+            tried.add(id(globalns))
+            try:
+                return eval(annotation, globalns)
+            except Exception:
+                pass
+        # Try module where function is defined
+        if func is not None:
+            modname = getattr(func, '__module__', None)
+            if modname:
+                mod = sys.modules.get(modname)
+                if mod is not None:
+                    modns = vars(mod)
+                    if id(modns) not in tried:
+                        tried.add(id(modns))
+                        # Try direct lookup
+                        if annotation in modns:
+                            return modns[annotation]
+                        # Try eval for nested/relative types
+                        try:
+                            return eval(annotation, modns)
+                        except Exception:
+                            pass
+        # Try module where the signature's function is defined (if different)
+        if hasattr(sig, '__module__'):
+            modname = getattr(sig, '__module__', None)
+            if modname:
+                mod = sys.modules.get(modname)
+                if mod is not None:
+                    modns = vars(mod)
+                    if id(modns) not in tried:
+                        tried.add(id(modns))
+                        if annotation in modns:
+                            return modns[annotation]
+                        try:
+                            return eval(annotation, modns)
+                        except Exception:
+                            pass
+        # Try all loaded modules for a matching symbol
+        for mod in sys.modules.values():
+            if not hasattr(mod, '__dict__'):
+                continue
+            modns = vars(mod)
+            if id(modns) in tried:
+                continue
+            if annotation in modns:
+                try:
+                    return modns[annotation]
+                except Exception:
+                    pass
+        # Fallback: return as string
+        return annotation
+
+    globalns = None
+    if func is not None:
+        globalns = getattr(func, "__globals__", None)
+    if globalns is None and hasattr(sig, '__globals__'):
+        globalns = getattr(sig, '__globals__', None)
+
+    params = []
+    for p in sig.parameters.values():
+        constraint = extract_constraint(p.annotation)
+        print(f"prepare_params DEBUG: param={p.name}, annotation={p.annotation}, constraint={constraint}")
+        params.append({
             "name": p.name,
             "kind": p.kind.name,
-            "type": p.annotation,  # Store the actual annotation object
+            "type": resolve_annotation(p.annotation, globalns),
             "type_name": get_type_name(p.annotation),
             "default": get_default(p.default),
-            "constraint": extract_constraint(p.annotation),
-        }
-        for p in sig.parameters.values()
-    ]
+            "constraint": constraint,
+        })
     posonly = [p for p in params if p["kind"] == "POSITIONAL_ONLY"]
     pos_or_kw = [p for p in params if p["kind"] == "POSITIONAL_OR_KEYWORD"]
     kwonly = [p for p in params if p["kind"] == "KEYWORD_ONLY"]

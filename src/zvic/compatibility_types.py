@@ -111,9 +111,12 @@ def is_type_compatible(a, b) -> bool:
     if a == b:
         return True
     # | T2 | Base → Derived (narrowing) | A: Animal → B: Cat | ✗ | New function requires specific subtype
-    print(
-        f"T2 DEBUG: {a=}, {b=}, {is_subtype(b, a)=}, {is_subtype(a, b)=}, {type(a)=}, {type(b)=}"
-    )
+    print("T2 DEBUG: a=", a, "b=", b, "a type=", type(a), "b type=", type(b))
+    try:
+        print("T2 DEBUG: a.__module__=", getattr(a, "__module__", None), "b.__module__=", getattr(b, "__module__", None))
+    except Exception as e:
+        print("T2 DEBUG: error getting __module__:", e)
+    print("T2 DEBUG: is_subtype(b, a)=", is_subtype(b, a), "is_subtype(a, b)=", is_subtype(a, b))
     if is_subtype(b, a) and a != b:
         raise SignatureIncompatible(
             message="T2: Cannot narrow parameter type from base to derived (contravariant narrowing).",

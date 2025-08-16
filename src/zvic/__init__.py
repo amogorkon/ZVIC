@@ -9,7 +9,7 @@ from .main import (
     is_compatible,
     load_module,
 )
-from .utils import _
+from .utils import _, assumption
 
 __all__ = [
     "canonicalize",
@@ -17,6 +17,7 @@ __all__ = [
     "canonical_signature",
     "_",
     "constrain_this_module",
+    "assumption",
     "are_params_compatible",
     "SignatureIncompatible",
     "is_signature_compatible",

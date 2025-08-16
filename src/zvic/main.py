@@ -1,5 +1,6 @@
 import ast
 import inspect
+import sys
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Mapping, get_args, get_origin, get_type_hints
@@ -17,9 +18,6 @@ def constrain_this_module():
         raise RuntimeError("Could not find caller frame")
     caller_globals = frame.f_back.f_globals
 
-    # Inject zvic.utils._ into caller's globals if not already present
-    from .utils import assumption
-
     if "_" not in caller_globals:
         caller_globals["_"] = _
     # Inject zvic.utils.assumption into caller's globals if not already present
@@ -33,16 +31,19 @@ def constrain_this_module():
     filename = caller_globals["__file__"]
     with open(filename, "r", encoding="utf-8") as f:
         source = f.read()
+
+    assert source.startswith(
+        "from __future__ import annotations"
+    ) and sys.version_info < (3, 13), (
+        f"ZVIC requires 'from __future__ import annotations' in {filename} for advanced annotation constraints on Python < 3.13. Please add it at the top of your module."
+    )
     tree = ast.parse(source, filename=filename)
     transformer = AnnotateCallsTransformer()
     new_tree = transformer.visit(tree)
     ast.fix_missing_locations(new_tree)
-    # Print the transformed code for inspection
-    print("\n===== Transformed Code =====\n")
-    print(ast.unparse(new_tree))
-    print("\n===== End Transformed Code =====\n")
     code = compile(new_tree, filename, "exec")
     exec(code, caller_globals)
+    return ast.unparse(new_tree)
 
 
 def load_module(path: Path, module_name: str) -> ModuleType:
