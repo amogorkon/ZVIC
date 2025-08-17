@@ -390,3 +390,13 @@ def C3(a: int(_ < 20)):
 # C4: narrower constraint in B
 def C4(a: int(_ < 10)):
     pass
+
+
+# --- Additional Mixed/Aux Tests ---
+# M1:
+def X1(x: str):
+    pass
+
+
+def X2(x: list(len(_) < 11)):
+    return x

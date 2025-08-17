@@ -55,7 +55,11 @@ class ZVICError(Exception):
         )
 
     def __str__(self):
-        return f"[{self.error_id}]: {self.message} \nSuggestions how to recover: {self.recovery_actions}"
+        if self.recovery_actions:
+            return (
+                f"{self.message} \nSuggestions how to recover: {self.recovery_actions}"
+            )
+        return str(self.message)
 
     def __repr__(self):
         return f"<{self.__class__.__name__} id={self.error_id} severity={self.severity} message={self.message!r}>"

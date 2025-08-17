@@ -66,6 +66,25 @@ def is_supertype(sup: Any, sub: Any) -> bool:
 
 
 def is_type_compatible(a, b) -> bool:
+    # Unwrap typing.Annotated types to their base type for both a and b
+    try:
+        from typing import get_origin, get_args
+    except ImportError:
+        def get_origin(tp):
+            return getattr(tp, "__origin__", None)
+        def get_args(tp):
+            return getattr(tp, "__args__", ())
+
+    def unwrap_annotated(t):
+        origin = get_origin(t)
+        if origin is not None and origin.__name__ == "Annotated":
+            args = get_args(t)
+            if args:
+                return unwrap_annotated(args[0])
+        return t
+
+    a = unwrap_annotated(a)
+    b = unwrap_annotated(b)
     # T8: Adjacent types | A: uint8 → B: uint16 | ✗ | Behavioral differences matter
     # If both are types, not primitive, not subtypes, and not equal, fail
     if (
@@ -78,7 +97,7 @@ def is_type_compatible(a, b) -> bool:
         and b.__name__.startswith("uint")
     ):
         raise SignatureIncompatible(
-            message="T8: Adjacent types (e.g., uint8 vs uint16) are not compatible.",
+            message="Adjacent types (e.g., uint8 vs uint16) are not compatible.",
             context={"A_type": a, "B_type": b},
             suggestion="Use explicit conversion or match types exactly.",
         )
@@ -94,14 +113,14 @@ def is_type_compatible(a, b) -> bool:
         and not issubclass(a, b)
     ):
         raise SignatureIncompatible(
-            message="T6: Implicit conversion between primitive types is not allowed.",
+            message="Implicit conversion between primitive types is not allowed.",
             context={"A_type": a, "B_type": b},
             suggestion="Use explicit conversion or ensure types match exactly.",
         )
     # T0: Untyped/Any → Specific type | A: Any → B: int | ✗ | Type constraint added
     if is_any_or_missing(a) and not is_any_or_missing(b):
         raise SignatureIncompatible(
-            message="T0: Untyped/Any parameter cannot be narrowed to a specific type without breaking compatibility.",
+            message="Untyped/Any parameter cannot be narrowed to a specific type without breaking compatibility.",
             context={"A_type": a, "B_type": b},
             suggestion="Start with a narrow type and explicitely go from there as baseline. There is nothing we can do from here.",
         )
@@ -111,15 +130,25 @@ def is_type_compatible(a, b) -> bool:
     if a == b:
         return True
     # | T2 | Base → Derived (narrowing) | A: Animal → B: Cat | ✗ | New function requires specific subtype
-    print("T2 DEBUG: a=", a, "b=", b, "a type=", type(a), "b type=", type(b))
+    print("DEBUG: a=", a, "b=", b, "a type=", type(a), "b type=", type(b))
     try:
-        print("T2 DEBUG: a.__module__=", getattr(a, "__module__", None), "b.__module__=", getattr(b, "__module__", None))
+        print(
+            "T2 DEBUG: a.__module__=",
+            getattr(a, "__module__", None),
+            "b.__module__=",
+            getattr(b, "__module__", None),
+        )
     except Exception as e:
         print("T2 DEBUG: error getting __module__:", e)
-    print("T2 DEBUG: is_subtype(b, a)=", is_subtype(b, a), "is_subtype(a, b)=", is_subtype(a, b))
+    print(
+        "T2 DEBUG: is_subtype(b, a)=",
+        is_subtype(b, a),
+        "is_subtype(a, b)=",
+        is_subtype(a, b),
+    )
     if is_subtype(b, a) and a != b:
         raise SignatureIncompatible(
-            message="T2: Cannot narrow parameter type from base to derived (contravariant narrowing).",
+            message="Cannot narrow parameter type from base to derived (contravariant narrowing).",
             context={"A_type": a, "B_type": b},
             suggestion="Relax the target type to the base type or use a union type to allow all valid inputs.",
         )
@@ -135,7 +164,7 @@ def is_type_compatible(a, b) -> bool:
         and not issubclass(b, a)
     ):
         raise SignatureIncompatible(
-            message="T3: Interface/ABC cannot be replaced by a concrete type unless it is a subtype.",
+            message="Interface/ABC cannot be replaced by a concrete type unless it is a subtype.",
             context={"A_type": a, "B_type": b},
             suggestion="Use a protocol or ABC as the target type, or ensure the concrete type is a valid subtype.",
         )
@@ -202,14 +231,14 @@ def is_type_compatible(a, b) -> bool:
     if a_args and b_args:
         if a_base != b_base or len(a_args) != len(b_args):
             raise SignatureIncompatible(
-                message="T10: Container types must match exactly (invariant).",
+                message="Container types must match exactly (invariant).",
                 context={"A_type": a, "B_type": b},
                 suggestion="Ensure container base types and all type arguments match exactly.",
             )
         for aa, ba in zip(a_args, b_args):
             if not is_type_compatible(aa, ba):
                 raise SignatureIncompatible(
-                    message="T10: Container type arguments must match exactly (invariant).",
+                    message="Container type arguments must match exactly (invariant).",
                     context={"A_type": aa, "B_type": ba},
                     suggestion="Ensure all container type arguments match exactly.",
                 )

@@ -1,7 +1,6 @@
 # type: ignore
 
 
-from inspect import signature
 from pathlib import Path
 
 import pytest
@@ -416,3 +415,13 @@ def test_C3():
 def test_C4():
     with pytest.raises(SignatureIncompatible):
         is_signature_compatible(mod_a.C4, mod_b.C4)
+
+
+# --- Additional Mixed Tests ---
+def test_X1():
+    with pytest.raises(SignatureIncompatible):
+        is_signature_compatible(mod_a.X1, mod_b.X1)
+
+
+def test_X2():
+    is_signature_compatible(mod_a.X2, mod_b.X2)

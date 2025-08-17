@@ -9,6 +9,7 @@ def is_signature_compatible(a_func, b_func):
     Accepts function objects, not just signatures, to allow robust annotation resolution.
     """
     from inspect import signature
+
     a_sig = signature(a_func)
     b_sig = signature(b_func)
     are_params_compatible(a_sig, b_sig)
