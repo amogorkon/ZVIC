@@ -23,8 +23,9 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
         constraints = []
         # Transform argument- and return-annotations
         for arg in node.args.args + node.args.kwonlyargs:
-            if arg.annotation:
-                new_ann = self._transform_ann(arg.annotation)
+            orig_ann = arg.annotation
+            if orig_ann:
+                new_ann = self._transform_ann(orig_ann)
                 # If annotation is Annotated with a constraint, extract it
                 param_type = None
                 if (
@@ -50,6 +51,21 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
                         )
                         if constraint:
                             param_constraint = str(constraint).replace("_", arg.arg)
+                            # Only update the AST constant for outer collection-level
+                            # calls (e.g., list[...] (len(_) == 3)). Detect this
+                            # when the original annotation was a Call whose func is
+                            # a Subscript. For element-level calls like int(...)
+                            # keep '_' in the annotation text.
+                            try:
+                                if (
+                                    isinstance(orig_ann, ast.Call)
+                                    and isinstance(orig_ann.func, ast.Subscript)
+                                    and isinstance(new_ann.slice, ast.Tuple)
+                                    and len(new_ann.slice.elts) == 2
+                                ):
+                                    new_ann.slice.elts[1] = ast.Constant(value=param_constraint)
+                            except Exception:
+                                pass
                             constraints.append((arg.arg, param_type, param_constraint))
                 arg.annotation = ast.copy_location(new_ann, arg.annotation)
         return_constraint = None
@@ -256,16 +272,22 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
             return ann
         # If annotation is a Call (e.g., int(_ < x)), always rewrite to Annotated with constraint as string
         if isinstance(ann, ast.Call):
-            base = ann.func
-            # Only transform arguments and keywords, not recursively wrap
+            # Transform the function (base) as it may itself contain Calls
+            # (e.g., list[int(...)]). Also transform arguments and keywords.
+            base = self._transform_ann(ann.func)
             ann.args = [self._transform_ann(arg) for arg in ann.args]
             for kw in ann.keywords:
                 if hasattr(kw, "value"):
                     kw.value = self._transform_ann(kw.value)
             # Extract the full argument string (including keywords)
             try:
-                call_src = ast.unparse(ann)
-                constraint = call_src[call_src.find("(") + 1 : -1]
+                # Build the constraint expression from the Call node's
+                # arguments and keywords. This avoids slicing the unparsed
+                # text which is error-prone for nested calls.
+                arg_parts = [ast.unparse(a) for a in ann.args]
+                kw_parts = [f"{kw.arg}={ast.unparse(kw.value)}" for kw in ann.keywords if kw.arg]
+                parts = arg_parts + kw_parts
+                constraint = ", ".join(parts)
             except Exception:
                 constraint = ""
             self.need_imports = True

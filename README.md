@@ -60,6 +60,12 @@ License: MIT — see the `LICENSE` file for details (SPDX: MIT).
 		 pip install -e .
 		 ```
 
+	If you want CrossHair support for semantic constraint analysis (optional), install the extra:
+
+	```sh
+	pip install .[crosshair]
+	```
+
 ### Quickstart
 For a minimal programmatic check you can use the following snippet (run from the repo root):
 

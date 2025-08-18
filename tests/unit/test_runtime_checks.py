@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from zvic import constrain_this_module
 from zvic.utils import _
 

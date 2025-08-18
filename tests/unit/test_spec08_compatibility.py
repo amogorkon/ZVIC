@@ -9,8 +9,10 @@ from zvic import load_module
 from zvic.compatibility import is_compatible
 from zvic.compatibility_params import SignatureIncompatible
 
-mod_a_path = Path(__file__).parent / "stuff" / "mod_a.py"
-mod_b_path = Path(__file__).parent / "stuff" / "mod_b.py"
+stuff = Path(__file__).parent.parent / "stuff"
+
+mod_a_path = stuff / "mod_a.py"
+mod_b_path = stuff / "mod_b.py"
 
 mod_a = load_module(mod_a_path, "mod_a")
 mod_b = load_module(mod_b_path, "mod_b")
@@ -447,8 +449,8 @@ def test_noodle():
 
 
 def test_M1():
-    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M1.py"
-    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M1.py"
+    mod_a_path = stuff / "mod_a_M1.py"
+    mod_b_path = stuff / "mod_b_M1.py"
 
     mod_a = load_module(mod_a_path, "mod_a")
     mod_b = load_module(mod_b_path, "mod_b")
@@ -457,8 +459,8 @@ def test_M1():
 
 
 def test_M2():
-    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M2.py"
-    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M2.py"
+    mod_a_path = stuff / "mod_a_M2.py"
+    mod_b_path = stuff / "mod_b_M2.py"
 
     mod_a = load_module(mod_a_path, "mod_a")
     mod_b = load_module(mod_b_path, "mod_b")
@@ -468,8 +470,8 @@ def test_M2():
 
 
 def test_M3():
-    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M3.py"
-    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M3.py"
+    mod_a_path = stuff / "mod_a_M3.py"
+    mod_b_path = stuff / "mod_b_M3.py"
 
     mod_a = load_module(mod_a_path, "mod_a")
     mod_b = load_module(mod_b_path, "mod_b")
@@ -479,8 +481,8 @@ def test_M3():
 
 
 def test_M4():
-    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M4.py"
-    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M4.py"
+    mod_a_path = stuff / "mod_a_M4.py"
+    mod_b_path = stuff / "mod_b_M4.py"
 
     mod_a = load_module(mod_a_path, "mod_a")
     mod_b = load_module(mod_b_path, "mod_b")
@@ -490,8 +492,8 @@ def test_M4():
 
 
 def test_M5_constant():
-    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M5.py"
-    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M5_constant.py"
+    mod_a_path = stuff / "mod_a_M5.py"
+    mod_b_path = stuff / "mod_b_M5_constant.py"
 
     mod_a = load_module(mod_a_path, "mod_a")
     mod_b = load_module(mod_b_path, "mod_b")
@@ -501,8 +503,8 @@ def test_M5_constant():
 
 
 def test_M5_class():
-    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M5.py"
-    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M5_class.py"
+    mod_a_path = stuff / "mod_a_M5.py"
+    mod_b_path = stuff / "mod_b_M5_class.py"
 
     mod_a = load_module(mod_a_path, "mod_a")
     mod_b = load_module(mod_b_path, "mod_b")
@@ -512,8 +514,8 @@ def test_M5_class():
 
 
 def test_M6():
-    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M5.py"
-    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M5_private.py"
+    mod_a_path = stuff / "mod_a_M5.py"
+    mod_b_path = stuff / "mod_b_M5_private.py"
 
     mod_a = load_module(mod_a_path, "mod_a")
     mod_b = load_module(mod_b_path, "mod_b")
@@ -522,8 +524,8 @@ def test_M6():
 
 
 def test_M7_add():
-    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M7.py"
-    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M7_add.py"
+    mod_a_path = stuff / "mod_a_M7.py"
+    mod_b_path = stuff / "mod_b_M7_add.py"
 
     mod_a = load_module(mod_a_path, "mod_a")
     mod_b = load_module(mod_b_path, "mod_b")
@@ -532,8 +534,8 @@ def test_M7_add():
 
 
 def test_M7_del():
-    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M7.py"
-    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M7_del.py"
+    mod_a_path = stuff / "mod_a_M7.py"
+    mod_b_path = stuff / "mod_b_M7_del.py"
 
     mod_a = load_module(mod_a_path, "mod_a")
     mod_b = load_module(mod_b_path, "mod_b")
@@ -543,8 +545,8 @@ def test_M7_del():
 
 
 def test_M8():
-    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M8.py"
-    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M8_add.py"
+    mod_a_path = stuff / "mod_a_M8.py"
+    mod_b_path = stuff / "mod_b_M8_add.py"
 
     mod_a = load_module(mod_a_path, "mod_a")
     mod_b = load_module(mod_b_path, "mod_b")
@@ -553,8 +555,8 @@ def test_M8():
 
 
 def test_M9():
-    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M8.py"
-    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M8_del.py"
+    mod_a_path = stuff / "mod_a_M8.py"
+    mod_b_path = stuff / "mod_b_M8_del.py"
 
     mod_a = load_module(mod_a_path, "mod_a")
     mod_b = load_module(mod_b_path, "mod_b")
@@ -564,8 +566,8 @@ def test_M9():
 
 
 def test_M10():
-    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M8.py"
-    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M8_reorder.py"
+    mod_a_path = stuff / "mod_a_M8.py"
+    mod_b_path = stuff / "mod_b_M8_reorder.py"
 
     mod_a = load_module(mod_a_path, "mod_a")
     mod_b = load_module(mod_b_path, "mod_b")

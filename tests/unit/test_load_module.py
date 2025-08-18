@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 from zvic.main import canonicalize, load_module
