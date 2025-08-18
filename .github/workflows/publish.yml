@@ -40,10 +40,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install build twine pytest
 
-      - name: Install package (editable)
+      - name: Install package (editable) with crosshair extra
         run: |
-          # Make the local package importable for tests
-          python -m pip install -e .
+          # Make the local package importable for tests and install optional crosshair tooling
+          python -m pip install -e ".[crosshair]"
 
       - name: Run tests
         run: pytest -q
