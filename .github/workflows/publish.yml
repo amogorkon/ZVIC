@@ -40,6 +40,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install build twine pytest
 
+      - name: Install package (editable)
+        run: |
+          # Make the local package importable for tests
+          python -m pip install -e .
+
       - name: Run tests
         run: pytest -q
 
@@ -54,7 +59,7 @@ jobs:
           path: dist/*
 
   publish:
-    name: Publish to PyPI / TestPyPI
+    name: Publish to PyPI
     runs-on: ubuntu-latest
     needs: test-and-build
     # run when a tag is pushed OR when manually dispatched
@@ -84,11 +89,10 @@ jobs:
 
       - name: Publish to PyPI
         shell: bash
-        env:
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           set -euo pipefail
           echo "Publishing to: pypi"
+          # Provide TWINE_PASSWORD from repo secret to the runner via GITHUB_ENV
+          echo "TWINE_PASSWORD=${{ secrets.PYPI_API_TOKEN }}" >> $GITHUB_ENV
           export TWINE_USERNAME="__token__"
-          # TWINE_PASSWORD is provided from repo secret via env
           python -m twine upload dist/*
