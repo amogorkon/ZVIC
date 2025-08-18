@@ -364,10 +364,14 @@ def prepare_params(sig: Signature, func=None) -> Params:
     params = []
     for p in sig.parameters.values():
         constraint = extract_constraint(p.annotation)
+        resolved_type = resolve_annotation(p.annotation, globalns)
+        print(
+            f"[PARAM DEBUG] Function: {getattr(func, '__qualname__', func)}, Param: {p.name}, Annotation: {p.annotation!r}, Resolved type: {resolved_type!r}"
+        )
         params.append({
             "name": p.name,
             "kind": p.kind.name,
-            "type": resolve_annotation(p.annotation, globalns),
+            "type": resolved_type,
             "type_name": get_type_name(p.annotation),
             "default": get_default(p.default),
             "constraint": constraint,

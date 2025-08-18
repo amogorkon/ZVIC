@@ -1,9 +1,11 @@
 # mypy: ignore-errors
 # type: ignore
 # mypy: ignore-errors
+
 from __future__ import annotations
 
 import sys
+from numbers import Real
 
 from zvic import _
 
@@ -18,10 +20,6 @@ class Cat(Animal):
 
 
 class Dog(Animal):
-    pass
-
-
-class Real:
     pass
 
 
@@ -400,3 +398,26 @@ def X1(x: str):
 
 def X2(x: list(len(_) < 11)):
     return x
+
+
+class Snail:
+    def foo(self, x: float) -> int:
+        return x
+
+
+class Bird:
+    def bar(self, y: str) -> str:
+        return y
+
+
+class Bird2:
+    def foo(self, x: float) -> int:
+        return x
+
+    def bar(self, y: str) -> str:
+        return y
+
+
+class Noodle:
+    def __init__(self, x: float):
+        self.x = x

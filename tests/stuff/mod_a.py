@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+from collections.abc import Sized
+from numbers import Integral
 from pathlib import Path
 
 from zvic import _
@@ -19,14 +21,6 @@ Animal = common_type.Animal
 
 
 # Placeholder types for signature tests
-
-
-class Sized:
-    pass
-
-
-class Integral:
-    pass
 
 
 class uint8(int):
@@ -416,3 +410,26 @@ def X1(x: int(_ > 10)):
 
 def X2(x: list(len(_) < 10)):
     return x
+
+
+class Snail:
+    def foo(self, x: int) -> int:
+        return x
+
+
+class Bird:
+    def foo(self, x: float) -> int:
+        return x
+
+    def bar(self, y: str) -> str:
+        return y
+
+
+class Bird2:
+    def foo(self, x: float) -> int:
+        return x
+
+
+class Noodle:
+    def __init__(self, x: int):
+        self.x = x

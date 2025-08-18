@@ -11,7 +11,6 @@ def are_params_compatible(a_sig: Signature, b_sig: Signature) -> bool:
     a = prepare_params(a_sig)
     b = prepare_params(b_sig)
     scenario = prepare_scenario(a, a_sig, b, b_sig)
-    print("DEBUG scenario tuple:", scenario)
 
     match scenario:
         # |AP4|	*args + **kwargs|	A(a, b, /) → B(*args, **kwargs)   |	✓

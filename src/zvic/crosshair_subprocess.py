@@ -27,7 +27,7 @@ def run_crosshair_on_code(code: str, function_name: str) -> bool | None:
         ]
         result = subprocess.run(cmd, capture_output=True, text=True)
         output = result.stdout + "\n" + result.stderr
-    # ...debug print removed...
+        # ...debug print removed...
         # Look for 'No counterexamples found' or similar success message, or exit code 0
         if "no checkable functions" in output.lower():
             # Signal to caller that CrossHair could not check this function

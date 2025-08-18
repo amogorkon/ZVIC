@@ -37,7 +37,16 @@ def is_subtype(sub: Any, sup: Any) -> bool:
         return True
     # Accept class objects directly
     if isinstance(sub, type) and isinstance(sup, type):
-        return issubclass(sub, sup)
+        try:
+            if issubclass(sub, sup):
+                return True
+        except Exception:
+            pass
+        # Cross-module: compare by class name and walk MROs
+        sub_mro = [c for c in getattr(sub, "__mro__", [])]
+        sup_name = getattr(sup, "__name__", None)
+        if sup_name and any(getattr(c, "__name__", None) == sup_name for c in sub_mro):
+            return True
     # Fallback: resolve strings via globals
     sub_cls: str | None = get_class_str(sub)
     sup_cls: str | None = get_class_str(sup)
@@ -46,7 +55,17 @@ def is_subtype(sub: Any, sup: Any) -> bool:
             sub_type: Any = globals().get(sub_cls)
             sup_type: Any = globals().get(sup_cls)
             if isinstance(sub_type, type) and isinstance(sup_type, type):
-                return issubclass(sub_type, sup_type)
+                try:
+                    if issubclass(sub_type, sup_type):
+                        return True
+                except Exception:
+                    pass
+                # Cross-module fallback
+                sub_mro = [c for c in getattr(sub_type, "__mro__", [])]
+                if sup_cls and any(
+                    getattr(c, "__name__", None) == sup_cls for c in sub_mro
+                ):
+                    return True
     return False
 
 
@@ -68,10 +87,12 @@ def is_supertype(sup: Any, sub: Any) -> bool:
 def is_type_compatible(a, b) -> bool:
     # Unwrap typing.Annotated types to their base type for both a and b
     try:
-        from typing import get_origin, get_args
+        from typing import get_args, get_origin
     except ImportError:
+
         def get_origin(tp):
             return getattr(tp, "__origin__", None)
+
         def get_args(tp):
             return getattr(tp, "__args__", ())
 
@@ -85,6 +106,9 @@ def is_type_compatible(a, b) -> bool:
 
     a = unwrap_annotated(a)
     b = unwrap_annotated(b)
+    print(
+        f"[TYPE DEBUG] Comparing types: a={a!r} (type={type(a)}), b={b!r} (type={type(b)})"
+    )
     # T8: Adjacent types | A: uint8 → B: uint16 | ✗ | Behavioral differences matter
     # If both are types, not primitive, not subtypes, and not equal, fail
     if (
@@ -112,6 +136,7 @@ def is_type_compatible(a, b) -> bool:
         and not issubclass(b, a)
         and not issubclass(a, b)
     ):
+        print(f"[TYPE DEBUG] Primitive type incompatibility detected: a={a}, b={b}")
         raise SignatureIncompatible(
             message="Implicit conversion between primitive types is not allowed.",
             context={"A_type": a, "B_type": b},
@@ -146,11 +171,55 @@ def is_type_compatible(a, b) -> bool:
         "is_subtype(a, b)=",
         is_subtype(a, b),
     )
+    # Disallow narrowing: base → derived (A: Animal → B: Cat)
+    if (
+        isinstance(a, type)
+        and isinstance(b, type)
+        and a != b
+        and is_subtype(a, b)  # a is subclass of b (derived → base, widening) is OK
+        and not is_subtype(b, a)  # b is not subclass of a (so not narrowing)
+    ):
+        return True
+    # If b is subclass of a and not equal, that's narrowing (base → derived), disallow
     if is_subtype(b, a) and a != b:
         raise SignatureIncompatible(
             message="Cannot narrow parameter type from base to derived (contravariant narrowing).",
             context={"A_type": a, "B_type": b},
             suggestion="Relax the target type to the base type or use a union type to allow all valid inputs.",
+        )
+    # If neither is a subtype of the other, but both are ABCs or unrelated, allow if not narrowing
+    if (
+        isinstance(a, type)
+        and isinstance(b, type)
+        and a != b
+        and not is_subtype(a, b)
+        and not is_subtype(b, a)
+    ):
+        # Allow if both are ABCs or unrelated (e.g., Integral → Real), as per T7
+        import numbers
+
+        abc_types = (numbers.Integral, numbers.Real, numbers.Number)
+        # Accept if both are ABCs and a is a subclass of b (contravariant acceptance)
+        try:
+            if issubclass(a, abc_types) and issubclass(b, abc_types):
+                if issubclass(a, b):
+                    return True
+                # Allow if a's MRO contains a class with the same name as b or any of b's ancestors (for ABCs across modules)
+                b_names = set(
+                    getattr(cls, "__name__", None) for cls in getattr(b, "__mro__", [])
+                )
+                a_mro_names = set(
+                    getattr(cls, "__name__", None) for cls in getattr(a, "__mro__", [])
+                )
+                if b_names & a_mro_names:
+                    return True
+        except Exception:
+            pass
+        # Otherwise, incompatible
+        raise SignatureIncompatible(
+            message="Incompatible parameter types: neither is a subtype of the other (narrowing not allowed).",
+            context={"A_type": a, "B_type": b},
+            suggestion="Ensure the target type is the same or a supertype of the source type.",
         )
 
     # T3: Interface → Concrete | A: Sized → B: list | ✗ | Implementation restricts valid inputs

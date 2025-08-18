@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from zvic import load_module
-from zvic.compatibility import is_signature_compatible
+from zvic.compatibility import is_compatible
 from zvic.compatibility_params import SignatureIncompatible
 
 mod_a_path = Path(__file__).parent / "stuff" / "mod_a.py"
@@ -98,330 +98,477 @@ SCENARIOS = [
 
 def test_P1():
     # Compatible: should not raise
-    is_signature_compatible(mod_a.P1, mod_b.P1)
+    is_compatible(mod_a.P1, mod_b.P1)
 
 
 def test_P2():
     # Incompatible: should raise
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.P2, mod_b.P2)
+        is_compatible(mod_a.P2, mod_b.P2)
 
 
 def test_P3():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.P3, mod_b.P3)
+        is_compatible(mod_a.P3, mod_b.P3)
 
 
 def test_P4():
-    is_signature_compatible(mod_a.P4, mod_b.P4)
+    is_compatible(mod_a.P4, mod_b.P4)
 
 
 def test_P5():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.P5, mod_b.P5)
+        is_compatible(mod_a.P5, mod_b.P5)
 
 
 def test_P6():
-    is_signature_compatible(mod_a.P6, mod_b.P6)
+    is_compatible(mod_a.P6, mod_b.P6)
 
 
 def test_P7():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.P7, mod_b.P7)
+        is_compatible(mod_a.P7, mod_b.P7)
 
 
 def test_PK1():
-    is_signature_compatible(mod_a.PK1, mod_b.PK1)
+    is_compatible(mod_a.PK1, mod_b.PK1)
 
 
 def test_PK2():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.PK2, mod_b.PK2)
+        is_compatible(mod_a.PK2, mod_b.PK2)
 
 
 def test_PK3():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.PK3, mod_b.PK3)
+        is_compatible(mod_a.PK3, mod_b.PK3)
 
 
 def test_PK4():
-    is_signature_compatible(mod_a.PK4, mod_b.PK4)
+    is_compatible(mod_a.PK4, mod_b.PK4)
 
 
 def test_PK5():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.PK5, mod_b.PK5)
+        is_compatible(mod_a.PK5, mod_b.PK5)
 
 
 def test_PK6():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.PK6, mod_b.PK6)
+        is_compatible(mod_a.PK6, mod_b.PK6)
 
 
 def test_PK7():
-    is_signature_compatible(mod_a.PK7, mod_b.PK7)
+    is_compatible(mod_a.PK7, mod_b.PK7)
 
 
 def test_PK8():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.PK8, mod_b.PK8)
+        is_compatible(mod_a.PK8, mod_b.PK8)
 
 
 def test_PK9():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.PK9, mod_b.PK9)
+        is_compatible(mod_a.PK9, mod_b.PK9)
 
 
 def test_K1():
-    is_signature_compatible(mod_a.K1, mod_b.K1)
+    is_compatible(mod_a.K1, mod_b.K1)
 
 
 def test_K2():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.K2, mod_b.K2)
+        is_compatible(mod_a.K2, mod_b.K2)
 
 
 def test_K3():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.K3, mod_b.K3)
+        is_compatible(mod_a.K3, mod_b.K3)
 
 
 def test_K4():
-    is_signature_compatible(mod_a.K4, mod_b.K4)
+    is_compatible(mod_a.K4, mod_b.K4)
 
 
 def test_K5():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.K5, mod_b.K5)
+        is_compatible(mod_a.K5, mod_b.K5)
 
 
 def test_K6():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.K6, mod_b.K6)
+        is_compatible(mod_a.K6, mod_b.K6)
 
 
 def test_K7():
-    is_signature_compatible(mod_a.K7, mod_b.K7)
+    is_compatible(mod_a.K7, mod_b.K7)
 
 
 def test_K8():
-    is_signature_compatible(mod_a.K8, mod_b.K8)
+    is_compatible(mod_a.K8, mod_b.K8)
 
 
 def test_K9():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.K9, mod_b.K9)
+        is_compatible(mod_a.K9, mod_b.K9)
 
 
 def test_AP1():
-    is_signature_compatible(mod_a.AP1, mod_b.AP1)
+    is_compatible(mod_a.AP1, mod_b.AP1)
 
 
 def test_AP2():
-    is_signature_compatible(mod_a.AP2, mod_b.AP2)
+    is_compatible(mod_a.AP2, mod_b.AP2)
 
 
 def test_AP3():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.AP3, mod_b.AP3)
+        is_compatible(mod_a.AP3, mod_b.AP3)
 
 
 def test_AP4():
-    is_signature_compatible(mod_a.AP4, mod_b.AP4)
+    is_compatible(mod_a.AP4, mod_b.AP4)
 
 
 def test_AP5():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.AP5, mod_b.AP5)
+        is_compatible(mod_a.AP5, mod_b.AP5)
 
 
 def test_AP6():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.AP6, mod_b.AP6)
+        is_compatible(mod_a.AP6, mod_b.AP6)
 
 
 def test_AP7():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.AP7, mod_b.AP7)
+        is_compatible(mod_a.AP7, mod_b.AP7)
 
 
 def test_AP8():
-    is_signature_compatible(mod_a.AP8, mod_b.AP8)
+    is_compatible(mod_a.AP8, mod_b.AP8)
 
 
 def test_AP9():
-    is_signature_compatible(mod_a.AP9, mod_b.AP9)
+    is_compatible(mod_a.AP9, mod_b.AP9)
 
 
 def test_AP10():
-    is_signature_compatible(mod_a.AP10, mod_b.AP10)
+    is_compatible(mod_a.AP10, mod_b.AP10)
 
 
 def test_AP11():
-    is_signature_compatible(mod_a.AP11, mod_b.AP11)
+    is_compatible(mod_a.AP11, mod_b.AP11)
 
 
 def test_APK1():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.APK1, mod_b.APK1)
+        is_compatible(mod_a.APK1, mod_b.APK1)
 
 
 def test_APK2():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.APK2, mod_b.APK2)
+        is_compatible(mod_a.APK2, mod_b.APK2)
 
 
 def test_APK3():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.APK3, mod_b.APK3)
+        is_compatible(mod_a.APK3, mod_b.APK3)
 
 
 def test_APK4():
-    is_signature_compatible(mod_a.APK4, mod_b.APK4)
+    is_compatible(mod_a.APK4, mod_b.APK4)
 
 
 def test_APK5():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.APK5, mod_b.APK5)
+        is_compatible(mod_a.APK5, mod_b.APK5)
 
 
 def test_APK6():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.APK6, mod_b.APK6)
+        is_compatible(mod_a.APK6, mod_b.APK6)
 
 
 def test_APK7():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.APK7, mod_b.APK7)
+        is_compatible(mod_a.APK7, mod_b.APK7)
 
 
 def test_APK8():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.APK8, mod_b.APK8)
+        is_compatible(mod_a.APK8, mod_b.APK8)
 
 
 def test_AK1():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.AK1, mod_b.AK1)
+        is_compatible(mod_a.AK1, mod_b.AK1)
 
 
 def test_AK2():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.AK2, mod_b.AK2)
+        is_compatible(mod_a.AK2, mod_b.AK2)
 
 
 def test_AK3():
-    is_signature_compatible(mod_a.AK3, mod_b.AK3)
+    is_compatible(mod_a.AK3, mod_b.AK3)
 
 
 def test_AK4():
-    is_signature_compatible(mod_a.AK4, mod_b.AK4)
+    is_compatible(mod_a.AK4, mod_b.AK4)
 
 
 def test_AK5():
-    is_signature_compatible(mod_a.AK5, mod_b.AK5)
+    is_compatible(mod_a.AK5, mod_b.AK5)
 
 
 def test_AK6():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.AK6, mod_b.AK6)
+        is_compatible(mod_a.AK6, mod_b.AK6)
 
 
 def test_AK7():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.AK7, mod_b.AK7)
+        is_compatible(mod_a.AK7, mod_b.AK7)
 
 
 def test_AK8():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.AK8, mod_b.AK8)
+        is_compatible(mod_a.AK8, mod_b.AK8)
 
 
 def test_T0():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.T0, mod_b.T0)
+        is_compatible(mod_a.T0, mod_b.T0)
 
 
 def test_T1():
-    is_signature_compatible(mod_a.T1, mod_b.T1)
+    is_compatible(mod_a.T1, mod_b.T1)
 
 
 def test_T2():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.T2, mod_b.T2)
+        is_compatible(mod_a.T2, mod_b.T2)
 
 
 def test_T3():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.T3, mod_b.T3)
+        is_compatible(mod_a.T3, mod_b.T3)
 
 
 def test_T4():
-    is_signature_compatible(mod_a.T4, mod_b.T4)
+    is_compatible(mod_a.T4, mod_b.T4)
 
 
 def test_T5():
-    is_signature_compatible(mod_a.T5, mod_b.T5)
+    is_compatible(mod_a.T5, mod_b.T5)
 
 
 def test_T6():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.T6, mod_b.T6)
+        is_compatible(mod_a.T6, mod_b.T6)
 
 
 def test_T7():
-    is_signature_compatible(mod_a.T7, mod_b.T7)
+    is_compatible(mod_a.T7, mod_b.T7)
 
 
 def test_T8():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.T8, mod_b.T8)
+        is_compatible(mod_a.T8, mod_b.T8)
 
 
 def test_T9():
-    is_signature_compatible(mod_a.T9, mod_b.T9)
+    is_compatible(mod_a.T9, mod_b.T9)
 
 
 def test_T10():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.T10, mod_b.T10)
+        is_compatible(mod_a.T10, mod_b.T10)
 
 
 def test_T11():
-    is_signature_compatible(mod_a.T11, mod_b.T11)
+    is_compatible(mod_a.T11, mod_b.T11)
 
 
 def test_C0a():
-    is_signature_compatible(mod_a.C0a, mod_b.C0a)
+    is_compatible(mod_a.C0a, mod_b.C0a)
 
 
 def test_C0b():
-    is_signature_compatible(mod_a.C0b, mod_b.C0b)
+    is_compatible(mod_a.C0b, mod_b.C0b)
 
 
 def test_C1():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.C1, mod_b.C1)
+        is_compatible(mod_a.C1, mod_b.C1)
 
 
 def test_C2():
-    is_signature_compatible(mod_a.C2, mod_b.C2)
+    is_compatible(mod_a.C2, mod_b.C2)
 
 
 def test_C3():
-    is_signature_compatible(mod_a.C3, mod_b.C3)
+    is_compatible(mod_a.C3, mod_b.C3)
 
 
 def test_C4():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.C4, mod_b.C4)
+        is_compatible(mod_a.C4, mod_b.C4)
 
 
 # --- Additional Mixed Tests ---
 def test_X1():
     with pytest.raises(SignatureIncompatible):
-        is_signature_compatible(mod_a.X1, mod_b.X1)
+        is_compatible(mod_a.X1, mod_b.X1)
 
 
 def test_X2():
-    is_signature_compatible(mod_a.X2, mod_b.X2)
+    is_compatible(mod_a.X2, mod_b.X2)
+
+
+def test_snail():
+    with pytest.raises(SignatureIncompatible):
+        is_compatible(mod_a.Snail, mod_b.Snail)
+
+
+def test_bird():
+    with pytest.raises(SignatureIncompatible):
+        is_compatible(mod_a.Bird, mod_b.Bird)
+
+
+def test_bird2():
+    is_compatible(mod_a.Bird2, mod_b.Bird2)
+
+
+def test_noodle():
+    with pytest.raises(SignatureIncompatible):
+        is_compatible(mod_a.Noodle, mod_b.Noodle)
+
+
+def test_M1():
+    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M1.py"
+    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M1.py"
+
+    mod_a = load_module(mod_a_path, "mod_a")
+    mod_b = load_module(mod_b_path, "mod_b")
+
+    is_compatible(mod_a, mod_b)
+
+
+def test_M2():
+    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M2.py"
+    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M2.py"
+
+    mod_a = load_module(mod_a_path, "mod_a")
+    mod_b = load_module(mod_b_path, "mod_b")
+
+    with pytest.raises(SignatureIncompatible):
+        is_compatible(mod_a, mod_b)
+
+
+def test_M3():
+    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M3.py"
+    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M3.py"
+
+    mod_a = load_module(mod_a_path, "mod_a")
+    mod_b = load_module(mod_b_path, "mod_b")
+
+    with pytest.raises(SignatureIncompatible):
+        is_compatible(mod_a, mod_b)
+
+
+def test_M4():
+    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M4.py"
+    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M4.py"
+
+    mod_a = load_module(mod_a_path, "mod_a")
+    mod_b = load_module(mod_b_path, "mod_b")
+
+    with pytest.raises(SignatureIncompatible):
+        is_compatible(mod_a, mod_b)
+
+
+def test_M5_constant():
+    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M5.py"
+    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M5_constant.py"
+
+    mod_a = load_module(mod_a_path, "mod_a")
+    mod_b = load_module(mod_b_path, "mod_b")
+
+    with pytest.raises(SignatureIncompatible):
+        is_compatible(mod_a, mod_b)
+
+
+def test_M5_class():
+    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M5.py"
+    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M5_class.py"
+
+    mod_a = load_module(mod_a_path, "mod_a")
+    mod_b = load_module(mod_b_path, "mod_b")
+
+    with pytest.raises(SignatureIncompatible):
+        is_compatible(mod_a, mod_b)
+
+
+def test_M6():
+    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M5.py"
+    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M5_private.py"
+
+    mod_a = load_module(mod_a_path, "mod_a")
+    mod_b = load_module(mod_b_path, "mod_b")
+
+    is_compatible(mod_a, mod_b)
+
+
+def test_M7_add():
+    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M7.py"
+    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M7_add.py"
+
+    mod_a = load_module(mod_a_path, "mod_a")
+    mod_b = load_module(mod_b_path, "mod_b")
+
+    is_compatible(mod_a, mod_b)
+
+
+def test_M7_del():
+    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M7.py"
+    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M7_del.py"
+
+    mod_a = load_module(mod_a_path, "mod_a")
+    mod_b = load_module(mod_b_path, "mod_b")
+
+    with pytest.raises(SignatureIncompatible):
+        is_compatible(mod_a, mod_b)
+
+
+def test_M8():
+    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M8.py"
+    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M8_add.py"
+
+    mod_a = load_module(mod_a_path, "mod_a")
+    mod_b = load_module(mod_b_path, "mod_b")
+
+    is_compatible(mod_a, mod_b)
+
+
+def test_M9():
+    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M8.py"
+    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M8_del.py"
+
+    mod_a = load_module(mod_a_path, "mod_a")
+    mod_b = load_module(mod_b_path, "mod_b")
+
+    with pytest.raises(SignatureIncompatible):
+        is_compatible(mod_a, mod_b)
+
+
+def test_M10():
+    mod_a_path = Path(__file__).parent / "stuff" / "mod_a_M8.py"
+    mod_b_path = Path(__file__).parent / "stuff" / "mod_b_M8_reorder.py"
+
+    mod_a = load_module(mod_a_path, "mod_a")
+    mod_b = load_module(mod_b_path, "mod_b")
+
+    with pytest.raises(SignatureIncompatible):
+        is_compatible(mod_a, mod_b)

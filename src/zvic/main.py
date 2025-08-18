@@ -226,47 +226,6 @@ def canonical_signature(func: Any, name: str | None = None) -> CANONICAL:
     }
 
 
-def is_compatible(
-    a: ModuleType,
-    b: ModuleType,
-) -> bool:
-    """
-    Returns True if b is forward compatible with a (i.e., b can safely replace a).
-    """
-    import inspect
-
-    from .compatibility import is_signature_compatible
-
-    def is_user_defined_callable(obj, mod_name):
-        return (inspect.isfunction(obj) or inspect.isclass(obj)) and getattr(
-            obj, "__module__", None
-        ) == mod_name
-
-    a_callables = {
-        name: obj
-        for name, obj in vars(a).items()
-        if is_user_defined_callable(obj, a.__name__)
-    }
-    b_callables = {
-        name: obj
-        for name, obj in vars(b).items()
-        if is_user_defined_callable(obj, b.__name__)
-    }
-
-    common_names = set(a_callables) & set(b_callables)
-    incompatible = []
-    for name in sorted(common_names):
-        try:
-            is_signature_compatible(a_callables[name], b_callables[name])
-        except Exception as e:
-            err = str(e)
-            incompatible.append((name, err))
-    if incompatible:
-        msg = "\n".join(f"{n}: {err} \n" for n, err in incompatible)
-        raise Exception(f"\nIncompatible callables found:\n{msg}")
-    return True
-
-
 def pprint_recursive(obj, indent=0):
     prefix = " " * indent
     if isinstance(obj, dict):

@@ -1,6 +1,6 @@
-import zvic.main
 from pathlib import Path
 
+import zvic.main
 
 a_mod = zvic.main.load_module(Path("stuff/mod_a1.py"), "mod_a1")
 b_mod = zvic.main.load_module(Path("stuff/mod_b1.py"), "mod_b1")

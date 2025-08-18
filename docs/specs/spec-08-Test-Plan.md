@@ -50,13 +50,13 @@ B is compatible with A iff:
 
 | ID | Scenario                                 |   Example                 |  Compatible?
 |----|-------------------------------------------|---------------------------|--------
-| P1| Same parameters (names irrelevant)        | A(a,b,/) -> B(x, y,/)     | ✓
-| P2| Additional required args in B             | A(a, b,/) -> B(x, y, z,/) | ✗
-| P3| Fewer required args in B                  | A(a,b,/) -> B(x,/)        | ✗
-| P4| Additional optional params in B           | A(a,/) -> B(x, y=5,/)     | ✓
-| P5| Fewer optional args in B                  | A(a,b=1,/) -> B(x,/)      | ✗
-| P6| B has less required but more optional args | A(a, b,/) -> B(x, y=5, z=6/) | ✓
-| P7| A has less required args than B, same total | A(a, b=1,/) -> B(x, y,/) | ✗
+| P1| Same parameters (names irrelevant)        | A(a,b,/) => B(x, y,/)     | ✓
+| P2| Additional required args in B             | A(a, b,/) => B(x, y, z,/) | ✗
+| P3| Fewer required args in B                  | A(a,b,/) => B(x,/)        | ✗
+| P4| Additional optional params in B           | A(a,/) => B(x, y=5,/)     | ✓
+| P5| Fewer optional args in B                  | A(a,b=1,/) => B(x,/)      | ✗
+| P6| B has less required but more optional args | A(a, b,/) => B(x, y=5, z=6/) | ✓
+| P7| A has less required args than B, same total | A(a, b=1,/) => B(x, y,/) | ✗
 
 Note: For positional-only signatures, compatibility requires that B has exactly as many positional arguments as A. Types need to be considered per argument - in a per-case basis, considered in its own compatibility matrix.
 
@@ -88,15 +88,15 @@ Compatibility Matrix:
 
 | ID | Scenario|	Example	|Compatible?
 |----|-----------------------------------------------|---------------------------|-------------|
-|PK1| Same args, same names	                            | A(a, b) -> B(a, b)                | ✓
-|PK2| Same count, different names                       | A(a, b) -> B(x, y)	            | ✗
-|PK3| Additional required args in B                     | A(a, b) -> B(a, b, c)	            | ✗
-|PK4| Additional optional args in B                     | A(a, b) -> B(a, b, c=0)	        | ✓
-|PK5| Fewer required args in B                          | A(a, b) -> B(a)	                | ✗
-|PK6| Fewer total args in B                             | A(a, b=1, c=2) -> B(a, b=1)	    | ✗
-|PK7| Fewer required, more optional                     | A(a, b, c=3) -> B(a, b=2, c=3)	| ✓
-|PK8| Same names, reordered                             | A(a, b) -> B(b, a)	            | ✗
-|PK9| A uses optional args, B requires them             | A(a, b=1) -> B(a, b)	            | ✗
+|PK1| Same args, same names	                            | A(a, b) => B(a, b)                | ✓
+|PK2| Same count, different names                       | A(a, b) => B(x, y)	            | ✗
+|PK3| Additional required args in B                     | A(a, b) => B(a, b, c)	            | ✗
+|PK4| Additional optional args in B                     | A(a, b) => B(a, b, c=0)	        | ✓
+|PK5| Fewer required args in B                          | A(a, b) => B(a)	                | ✗
+|PK6| Fewer total args in B                             | A(a, b=1, c=2) => B(a, b=1)	    | ✗
+|PK7| Fewer required, more optional                     | A(a, b, c=3) => B(a, b=2, c=3)	| ✓
+|PK8| Same names, reordered                             | A(a, b) => B(b, a)	            | ✗
+|PK9| A uses optional args, B requires them             | A(a, b=1) => B(a, b)	            | ✗
 
 **Key Differences from Positional-Only:**
 * Names must match — unlike positional-only
@@ -122,15 +122,15 @@ B is compatible with A if all the following hold:
 
 | ID | Scenario                                  | Example                     | Compatible?
 |----|-----------------------------------------------|-----------------------------|-------------|
-|K1| Same args, same names                     | A(*, a, b) -> B(*, a, b)      | ✓
-|K2| Same count, different names               | A(*, a, b) -> B(*, x, y)      | ✗
-|K3| Additional required args in B             | A(*, a, b) -> B(*, a, b, c)   | ✗
-|K4| Additional optional args in B             | A(*, a, b) -> B(*, a, b, c=0) | ✓
-|K5| Fewer required args in B                  | A(*, a, b) -> B(*, a)         | ✗
-|K6| Fewer total args in B                     | A(*, a, b=1, c=2) -> B(*, a, b=1) | ✗
-|K7| Fewer required, more optional             | A(*, a, b, c=3) -> B(*, a, b=2, c=3) | ✓
-|K8| Same names, reordered                     | A(*, a, b) -> B(*, b, a)      | ✓
-|K9| A uses optional args, B requires them     | A(*, a, b=1) -> B(*, a, b)    | ✗
+|K1| Same args, same names                     | A(*, a, b) => B(*, a, b)      | ✓
+|K2| Same count, different names               | A(*, a, b) => B(*, x, y)      | ✗
+|K3| Additional required args in B             | A(*, a, b) => B(*, a, b, c)   | ✗
+|K4| Additional optional args in B             | A(*, a, b) => B(*, a, b, c=0) | ✓
+|K5| Fewer required args in B                  | A(*, a, b) => B(*, a)         | ✗
+|K6| Fewer total args in B                     | A(*, a, b=1, c=2) => B(*, a, b=1) | ✗
+|K7| Fewer required, more optional             | A(*, a, b, c=3) => B(*, a, b=2, c=3) | ✓
+|K8| Same names, reordered                     | A(*, a, b) => B(*, b, a)      | ✓
+|K9| A uses optional args, B requires them     | A(*, a, b=1) => B(*, a, b)    | ✗
 
 
 
@@ -224,7 +224,7 @@ A transition from positional & keyword to positional-only or keyword-only would 
 Especially tricky is the move from no type annotation or Any to a specific type, as it inevitably breaks compatibility if the caller passes a type that is not compatible with the new type signature. However, this is exactly what Python encourages by its design of Optional Typing, which is in direct conflict of the idea of zero-versioning compatibility. Therefor it is recommended to follow the idea of Optional Typing at first (no type annotations or very generic types) but then make a hard transition to fully specified type signatures (as a baseline commit) and then go from there. **Every time a relaxed type is tightened, it is a breaking change that requires a new baseline commit.**
 
 **Note on Type Transitioning:**
-Transitioning between types is tricky. While theoretically widening the type may seems compatible at first glance, in practice this can lead to runtime errors. Instead of directly moving from A: Dog -> B: Animal in order to accommodate another C: Cat type, it is recommended to first move to B: Dog | Cat | Animal and go from there. This way we get a temporal decoupling, allowing some deprecation (with warnings, tests, dispatch etc.) before the final transition to B: Animal or possible B: AnimalProtocol (which would be the most flexible solution).
+Transitioning between types is tricky. While theoretically widening the type may seems compatible at first glance, in practice this can lead to runtime errors. Instead of directly moving from A: Dog => B: Animal in order to accommodate another C: Cat type, it is recommended to first move to B: Dog | Cat | Animal and go from there. This way we get a temporal decoupling, allowing some deprecation (with warnings, tests, dispatch etc.) before the final transition to B: Animal or possible B: AnimalProtocol (which would be the most flexible solution).
 
 ### 2.2. Compatibility Matrix: Type Signatures
 
@@ -242,7 +242,14 @@ Transitioning between types is tricky. While theoretically widening the type may
 | T9 | Derived → Base (widening) | A: Cat → B: Animal | ✓ | Contravariant parameter acceptance
 | T10 | Container invariance | A: list[int] → B: list[str] | ✗ | Generic parameters invariant
 | T11 | Container contravariance | A: list[Dog] → B: list[Animal] | ✓ | List of Dog is compatible with list of Animal
-
+| T12 | Function => Callable Class/Instance | A: def foo(x: int) => B: class Foo with def __call__(x: int) | ✓ | Callable class can be used as a function, widening options
+| T13 | Callable Class => Function | A: class Foo with def __call__(x: int) => B: def foo(x: int) | ✗ | Function is more limited than callable class, narrowing
+| T14 | Attribute => Property | A: Foo.a => B: Foo.a (property for read, write and del) | ✓ | Property is equivalent to attribute if ALL THREE operations are supported
+| T15 | Attribute => Read-Only Property | A: Foo.a => B: Foo.a (property for read only) | ✗ | Read-only property is narrower than attribute, breaking compatibility
+| T16 | Read-Only Property => Attribute | A: Foo.a (property for read only) => B: Foo.a | ✓ | Read-only property can be used as an attribute, widening options
+| T17 | Read-Only Property => Read-Write Property | A: Foo.a (property for read only) => B: Foo.a (property for read, write and del) | ✓ | Read-only property can be used as a read-write property, widening
+| T18 | Read-Write Property => Read-Only Property | A: Foo.a (property for read, write and del) => B: Foo.a (property for read only) | ✗ | Read-write property is wider than read-only property, breaking compatibility
+| T19 | Function never raises => Function may raise  OR Function may raise => Function never raises | A: def foo(x: int) -> int => B: def foo(x: int) -> int & possible Exception | ✗ | Raising OR NOT raising an exception is part of the function's contract - it cannot be changed without breaking compatibility as others may rely on this behaviour.
 ---
 
 
@@ -259,9 +266,39 @@ Transitioning between types is tricky. While theoretically widening the type may
 
 | ID | Scenario | Example | Compatible? | Reasoning
 |----|----------|---------|-------------|----------------
-| C0a | No constraint in A, no constraint in B | A(a:int) -> B(a:int) | ✓ | No constraints to break compatibility
-| C0b | same constraint in A and B | A(a:int(_ <10)) -> B(a:int(_ <10)) | ✓ | Exact match, no issues
-| C1 | No constraint in A, any in B | A(a:int) -> B(a:int(_ <20)) | ✗ | passing anything to A outside constraints will break B
-| C2 | Any constraint in A, no constraint in B | A(a:int(_ <10)) -> B(a:int) | ✓ | No constraints in B, so A can pass anything
-| C3 | wider constraint in B | A(a:int(_ <10)) -> B(a:int(_<20)) | ✓ | B accepts more than A, so A can pass anything
-| C4 | narrower constraint in B | A(a:int( _ <20)) -> B(a:int(_ <10)) | ✗ | some inputs that A accepts will not be accepted by B
+| C0a | No constraint in A, no constraint in B | A(a:int) => B(a:int) | ✓ | No constraints to break compatibility
+| C0b | same constraint in A and B | A(a:int(_ <10)) => B(a:int(_ <10)) | ✓ | Exact match, no issues
+| C1 | No constraint in A, any in B | A(a:int) => B(a:int(_ <20)) | ✗ | passing anything to A outside constraints will break B
+| C2 | Any constraint in A, no constraint in B | A(a:int(_ <10)) => B(a:int) | ✓ | No constraints in B, so A can pass anything
+| C3 | wider constraint in B | A(a:int(_ <10)) => B(a:int(_<20)) | ✓ | B accepts more than A, so A can pass anything
+| C4 | narrower constraint in B | A(a:int( _ <20)) => B(a:int(_ <10)) | ✗ | some inputs that A accepts will not be accepted by B
+
+
+# 4. Module/Interface Compatibility (Mx)
+
+## 4.1. Interface as Set of Callables
+
+For module or class compatibility, the interface is defined as the set of all callable attributes (functions, methods, __init__, __call__, etc.) exposed by the module/class. For B to be compatible with A, every callable present in A must exist in B with a compatible signature. B may have additional callables, but must not remove or break any callable present in A.
+
+**Compatibility Condition:**
+
+    The set of callable names in B must be a superset of A's, and for every callable in A, the signature in B must be compatible (per the rules in Chapters 1–3).
+
+If B is missing any callable that A exposes, or if any callable's signature is incompatible, then B is not compatible with A.
+
+## 4.2. Module Compatibility Scenarios
+
+| ID  | Scenario        | Example                | Compatible? | Reasoning |
+|-----|-----------------|------------------------|-------------|-----------|
+| M1  | B adds a new callable                    | A: foo, bar → B: foo, bar, baz           | ✓           | Addition is safe; callers using A are unaffected |
+| M2  | B removes a callable present in A        | A: foo, bar → B: foo                     | ✗           | Removal breaks callers relying on bar |
+| M3 | B changes a sync def to async def and vice versa | A: foo(x: int) => B: async foo(x: int) | ✗ | Async def cannot be used in place of sync def, breaking caller expectations |
+| M4 | B converts a function to a generator by using yield | A: foo(x: int) => B: foo(x: int) | ✗ | Generator cannot be used in place of regular function, breaking caller expectations |
+| M5 | Removing attributes, constants or classes in B that were present in A | A: foo, bar, Baz → B: foo, Baz | ✗ | Removal of any attribute breaks compatibility as callers may expect it to exist |
+| M6 | Removing items that are designated private | A: _foo, _bar → B: _foo | ✓ | Private items can be removed without breaking compatibility |
+| M7 | Removing items from __all__ | A: __all__ = [foo, bar] → B: __all__ = [foo] | ✗ | Removal from __all__ breaks compatibility as it changes the public API |
+| M8 | Adding items to an Enum | A: Color.RED, Color.GREEN → B: Color.RED, Color.GREEN, Color.BLUE | ✓ | Adding to an Enum is safe; callers using A are unaffected |
+| M9 | Removing items from an Enum | A: Color.RED, Color.GREEN → B: Color.RED | ✗ | Removal from an Enum breaks compatibility as it changes the set of valid values |
+| M10 | Changing the order of an Enum | A: Color.RED, Color.GREEN, Color.BLUE → B: Color.GREEN, Color.RED, Color.BLUE | ✗ | Changing the order of Enum members breaks compatibility as it changes the meaning of the values |
+
+**Note:** This approach treats the set of callables as the module/class interface. Compatibility is only preserved if B's callable set is a superset of A's, and all signatures are compatible.
