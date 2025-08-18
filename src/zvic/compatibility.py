@@ -1,7 +1,9 @@
 import inspect
-from enum import Enum
+import logging
 import types
+from enum import Enum
 from inspect import signature
+from typing import Any, Callable, cast
 
 from .compatibility_constraints import is_constraint_compatible
 from .compatibility_params import are_params_compatible
@@ -25,8 +27,16 @@ def is_compatible(a, b):
             # attributes available.
             mod_vars = vars(mod)
             if "__all__" in mod_vars and isinstance(mod_vars["__all__"], (list, tuple)):
-                return {name: mod_vars[name] for name in mod_vars["__all__"] if name in mod_vars}
-            return {name: member for name, member in mod_vars.items() if not name.startswith("_")}
+                return {
+                    name: mod_vars[name]
+                    for name in mod_vars["__all__"]
+                    if name in mod_vars
+                }
+            return {
+                name: member
+                for name, member in mod_vars.items()
+                if not name.startswith("_")
+            }
 
         a_public = get_public_interface(a)
         b_public = get_public_interface(b)
@@ -36,6 +46,7 @@ def is_compatible(a, b):
                 f"Public attributes missing in {b.__name__}: {sorted(missing)}"
             )
         # For callables, check signature compatibility
+        logger = logging.getLogger(__name__)
         for name in sorted(a_public):
             if name in b_public:
                 a_val = a_public[name]
@@ -49,7 +60,7 @@ def is_compatible(a, b):
                     or inspect.isclass(b_val)
                     or callable(b_val)
                 ):
-                    print(f"[SIG DEBUG] Recursively comparing module callable: {name}")
+                    logger.debug(f"Recursively comparing module callable: {name}")
                     is_compatible(a_val, b_val)
         return None
     # If both are classes, recursively check all user-defined methods
@@ -58,9 +69,10 @@ def is_compatible(a, b):
         def get_methods(cls):
             methods = {}
             for name, member in vars(cls).items():
-                if (inspect.isfunction(member) or isinstance(member, (staticmethod, classmethod))) and not (
-                    name.startswith("__") and name != "__init__"
-                ):
+                if (
+                    inspect.isfunction(member)
+                    or isinstance(member, (staticmethod, classmethod))
+                ) and not (name.startswith("__") and name != "__init__"):
                     # Unwrap descriptors: staticmethod and classmethod store the
                     # underlying function in the __func__ attribute in the class
                     # dict. Use that so inspect.signature() receives a plain
@@ -101,10 +113,9 @@ def is_compatible(a, b):
                         f"Enum member value changed for {a.__name__}.{name}: a.value={a_val!r}, b.value={b_val!r}"
                     )
         # Always check __init__ if present in both
+        logger = logging.getLogger(__name__)
         if hasattr(a, "__init__") and hasattr(b, "__init__"):
-            print(
-                f"[SIG DEBUG] Recursively comparing constructor: {a.__name__}.__init__"
-            )
+            logger.debug(f"Recursively comparing constructor: {a.__name__}.__init__")
             is_compatible(a.__init__, b.__init__)
         # Always check __call__ if present in both
         if (
@@ -114,7 +125,7 @@ def is_compatible(a, b):
                 a.__call__ is not object.__call__ and b.__call__ is not object.__call__
             )
         ):
-            print(f"[SIG DEBUG] Recursively comparing callable: {a.__name__}.__call__")
+            logger.debug(f"Recursively comparing callable: {a.__name__}.__call__")
             is_compatible(a.__call__, b.__call__)
         # Check for missing methods in B (excluding __init__)
         missing_methods = set(a_methods) - set(b_methods)
@@ -122,6 +133,7 @@ def is_compatible(a, b):
             raise SignatureIncompatible(
                 f"Methods missing in {b.__name__}: {sorted(missing_methods)}"
             )
+
         # Also check for missing public class attributes (constants, enum
         # members, etc.) that aren't methods. Treat names not starting with
         # an underscore as public.
@@ -150,12 +162,12 @@ def is_compatible(a, b):
                 continue
             a_m = a_methods[mname]
             b_m = b_methods[mname]
-            print(f"[SIG DEBUG] Recursively comparing method: {a.__name__}.{mname}")
+            logger.debug(f"Recursively comparing method: {a.__name__}.{mname}")
             is_compatible(a_m, b_m)
         return None
 
-    print(
-        f"[SIG DEBUG] Comparing: a_func={a} ({getattr(a, '__qualname__', '')}), b_func={b} ({getattr(b, '__qualname__', '')})"
+    logging.getLogger(__name__).debug(
+        f"Comparing: a_func={a} ({getattr(a, '__qualname__', '')}), b_func={b} ({getattr(b, '__qualname__', '')})"
     )
     # Check for sync/async and generator/non-generator mismatch
     if inspect.isfunction(a) and inspect.isfunction(b):
@@ -171,8 +183,20 @@ def is_compatible(a, b):
             raise SignatureIncompatible(
                 f"Function generator/non-generator mismatch: a is {'generator' if a_is_gen else 'regular'}, b is {'generator' if b_is_gen else 'regular'}"
             )
-    a_sig = signature(a)  # type: ignore[arg-type]
-    b_sig = signature(b)  # type: ignore[arg-type]
+
+    def _safe_signature(obj: object):
+        """Return inspect.signature(obj) while narrowing the type for static checkers.
+
+        We cast to Callable[..., Any] because inspect.signature accepts callables
+        and mypy/pyright complain when the static type includes e.g. ModuleType.
+        """
+        if isinstance(obj, types.ModuleType):
+            # Modules should have been handled earlier; treat this as an error
+            raise SignatureIncompatible(f"Cannot take signature of module: {obj!r}")
+        return signature(cast(Callable[..., Any], obj))
+
+    a_sig = _safe_signature(a)
+    b_sig = _safe_signature(b)
     are_params_compatible(a_sig, b_sig)
     a_params = prepare_params(a_sig, a)
     b_params = prepare_params(b_sig, b)

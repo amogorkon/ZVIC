@@ -1,3 +1,4 @@
+import logging
 from inspect import Signature
 
 from .exception import SignatureIncompatible
@@ -64,8 +65,8 @@ def are_params_compatible(a_sig: Signature, b_sig: Signature) -> bool:
             b_pos_or_kw_required=b_pk,
             b_kwonly_required=b_ko,
         ) if (b_po + b_pk + b_ko) > (a_po + a_pk + a_ko):
-            print(
-                f"DEBUG: Global required param check failed: a_required={a_po + a_pk + a_ko}, b_required={b_po + b_pk + b_ko}"
+            logging.getLogger(__name__).debug(
+                f"Global required param check failed: a_required={a_po + a_pk + a_ko}, b_required={b_po + b_pk + b_ko}"
             )
             raise SignatureIncompatible(
                 message="B has more required parameters than A",

@@ -3,6 +3,7 @@
 
 import ast
 import contextlib
+import logging
 import sys
 from collections import namedtuple
 from dataclasses import dataclass
@@ -246,7 +247,7 @@ class Scenario:
 
 
 def prepare_scenario(
-    a: Params, a_sig: Signature, b: Params, b_sig: Signature
+    a: Params, _a_sig: Signature, b: Params, _b_sig: Signature
 ) -> Scenario:
     """
     Accepts Params and Signature objects for a and b, uses Signature for varargs/varkw detection.
@@ -265,8 +266,8 @@ def prepare_scenario(
         b_pos_or_kw=len(b.pos_or_kw),
         b_kwonly_required=len(b.kwonly_required),
         b_kwonly=len(b.kwonly),
-        b_has_varargs=has_varargs(b_sig),
-        b_has_varkw=has_varkw(b_sig),
+        b_has_varargs=has_varargs(_b_sig),
+        b_has_varkw=has_varkw(_b_sig),
     )
 
 
@@ -283,14 +284,12 @@ def prepare_params(sig: Signature, func=None) -> Params:
                 constraint_clean = constraint.strip().strip("'\"")
                 return constraint_clean
         if isinstance(annotation, str) and annotation.startswith("Annotated["):
-            try:
+            with contextlib.suppress(Exception):
                 first_comma = annotation.find(",")
                 if first_comma != -1:
                     constraint = annotation[first_comma + 1 :].rstrip("] ")
                     constraint_clean = constraint.strip().strip("'\"")
                     return constraint_clean
-            except Exception:
-                pass
         return None
 
     # ...debug print removed...
@@ -304,10 +303,8 @@ def prepare_params(sig: Signature, func=None) -> Params:
         # Try function's globals
         if globalns is not None:
             tried.add(id(globalns))
-            try:
+            with contextlib.suppress(Exception):
                 return eval(annotation, globalns)
-            except Exception:
-                pass
         # Try module where function is defined
         if func is not None:
             modname = getattr(func, "__module__", None)
@@ -321,10 +318,8 @@ def prepare_params(sig: Signature, func=None) -> Params:
                         if annotation in modns:
                             return modns[annotation]
                         # Try eval for nested/relative types
-                        try:
+                        with contextlib.suppress(Exception):
                             return eval(annotation, modns)
-                        except Exception:
-                            pass
         # Try module where the signature's function is defined (if different)
         if hasattr(sig, "__module__"):
             modname = getattr(sig, "__module__", None)
@@ -336,10 +331,8 @@ def prepare_params(sig: Signature, func=None) -> Params:
                         tried.add(id(modns))
                         if annotation in modns:
                             return modns[annotation]
-                        try:
+                        with contextlib.suppress(Exception):
                             return eval(annotation, modns)
-                        except Exception:
-                            pass
         # Try all loaded modules for a matching symbol
         for mod in sys.modules.values():
             if not hasattr(mod, "__dict__"):
@@ -348,10 +341,8 @@ def prepare_params(sig: Signature, func=None) -> Params:
             if id(modns) in tried:
                 continue
             if annotation in modns:
-                try:
+                with contextlib.suppress(Exception):
                     return modns[annotation]
-                except Exception:
-                    pass
         # Fallback: return as string
         return annotation
 
@@ -365,8 +356,8 @@ def prepare_params(sig: Signature, func=None) -> Params:
     for p in sig.parameters.values():
         constraint = extract_constraint(p.annotation)
         resolved_type = resolve_annotation(p.annotation, globalns)
-        print(
-            f"[PARAM DEBUG] Function: {getattr(func, '__qualname__', func)}, Param: {p.name}, Annotation: {p.annotation!r}, Resolved type: {resolved_type!r}"
+        logging.getLogger(__name__).debug(
+            f"Function: {getattr(func, '__qualname__', func)}, Param: {p.name}, Annotation: {p.annotation!r}, Resolved type: {resolved_type!r}"
         )
         params.append({
             "name": p.name,
@@ -446,10 +437,6 @@ def is_required(p: dict[str, Any]) -> bool:
     return (p.get("default") is None or p.get("default") == Parameter.empty) and p.get(
         "kind"
     ) not in ("VAR_POSITIONAL", "VAR_KEYWORD")
-
-
-def debug_print(*args, **kwargs):
-    print(*args, **kwargs, file=sys.stdout)
 
 
 def get_type_name(annotation: Any) -> str | None:

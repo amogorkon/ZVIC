@@ -1,3 +1,5 @@
+import re
+
 from .exception import SignatureIncompatible
 
 
@@ -8,15 +10,11 @@ def is_constraint_compatible(a_param, b_param):
     """
     a_con = a_param.get("constraint")
     b_con = b_param.get("constraint")
-    # ...debug print removed...
-    # If neither has a constraint, compatible
-    if not a_con and not b_con:
-        return True
-    # If only A has a constraint and B does not, this is compatible (B is more permissive)
-    if a_con and not b_con:
-        return True
-    # If only B has a constraint, this is NOT compatible (B is more restrictive)
-    if not a_con and b_con:
+    # If B has no constraint, it's permissive (covers both neither-has and only-A-has cases)
+    if not b_con:
+        return
+    # If only B has a constraint (A does not), this is NOT compatible (B is more restrictive)
+    if not a_con:
         raise SignatureIncompatible(
             f"B adds constraint for parameter {a_param.get('name')}: {b_con}"
         )
@@ -33,16 +31,12 @@ def is_constraint_compatible(a_param, b_param):
             "    assert not ({a})\n"
             "    return True\n"
         ).format(a=a_con.replace("_", "x"), b=b_con.replace("_", "x"))
-        # ...debug print removed...
         try:
             from .crosshair_subprocess import run_crosshair_on_code
 
             crosshair_result = run_crosshair_on_code(func_code, "_chk")
-            # ...debug print removed...
             if crosshair_result is None:
                 # CrossHair could not check the function, fallback to numeric range comparison if possible
-                import re
-
                 # Try to match _ < N
                 pat_simple = r"^_\s*<\s*(\d+)$"
                 a_match = re.match(pat_simple, a_con.strip())
@@ -51,7 +45,7 @@ def is_constraint_compatible(a_param, b_param):
                     a_val = int(a_match.group(1))
                     b_val = int(b_match.group(1))
                     if b_val >= a_val:
-                        return True
+                        return
                     else:
                         raise SignatureIncompatible(
                             f"Constraint mismatch for parameter {a_param.get('name')}: {a_con} vs {b_con} (B is narrower and thus incompatible: some inputs that A accepts will not be accepted by B)"
@@ -64,7 +58,7 @@ def is_constraint_compatible(a_param, b_param):
                     a_val = int(a_match.group(1))
                     b_val = int(b_match.group(1))
                     if b_val >= a_val:
-                        return True
+                        return
                     else:
                         raise SignatureIncompatible(
                             f"Constraint mismatch for parameter {a_param.get('name')}: {a_con} vs {b_con} (B is narrower and thus incompatible: some inputs that A accepts will not be accepted by B)"
@@ -74,36 +68,33 @@ def is_constraint_compatible(a_param, b_param):
                     raise SignatureIncompatible(
                         f"Constraint mismatch for parameter {a_param.get('name')}: {a_con} vs {b_con} (B is narrower and thus incompatible: some inputs that A accepts will not be accepted by B)"
                     )
-                return True
+                return
             if crosshair_result:
                 # No counterexample found: B is at least as permissive as A
-                return True
+                return
             else:
                 # Counterexample found: B is not as permissive as A
                 raise SignatureIncompatible(
                     f"Constraint mismatch for parameter {a_param.get('name')}: {a_con} vs {b_con} (B is narrower and thus incompatible: some inputs that A accepts will not be accepted by B)"
                 )
-        except Exception:
-            # ...debug print removed...
+        except Exception as e:
             # Fallback: if CrossHair fails, try numeric range comparison
-            import re
 
             pat = r"^_\s*<\s*(\d+)$"
             a_match = re.match(pat, a_con.strip())
             b_match = re.match(pat, b_con.strip())
             if a_match and b_match:
-                a_val = int(a_match.group(1))
-                b_val = int(b_match.group(1))
+                a_val = int(a_match[1])
+                b_val = int(b_match[1])
                 if b_val >= a_val:
                     return True
                 else:
                     raise SignatureIncompatible(
                         f"Constraint mismatch for parameter {a_param.get('name')}: {a_con} vs {b_con} (B is narrower and thus incompatible: some inputs that A accepts will not be accepted by B)"
-                    )
+                    ) from e
             # Fallback: if not a recognized pattern, require exact match
             if a_con != b_con:
                 raise SignatureIncompatible(
                     f"Constraint mismatch for parameter {a_param.get('name')}: {a_con} vs {b_con} (B is narrower and thus incompatible: some inputs that A accepts will not be accepted by B)"
-                )
-            return True
-    return True
+                ) from e
+            return

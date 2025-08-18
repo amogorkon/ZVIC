@@ -1,8 +1,8 @@
 
-# ZVIC Compatibility Test Plan
+# ZVIC Compatibility Details & Test Plan
 
 ## Purpose
-This test plan focuses on verifying compatibility between two modules at all relevant levels: parameters, types, and constraints. Each section includes a test matrix to ensure all combinations are covered.
+This document specifies compatibility between two modules at all relevant levels: parameters, types, and constraints and specifies IDs to be covered as test case. Each section includes a test matrix to ensure all relevant combinations are covered.
 
 All cases are numbered for easy reference within test cases. First column of each matrix is `ID` which is used to reference the specific case in test cases.
 

@@ -3,15 +3,16 @@
 Everything we need to check for compatibility between types of a single parameter or return value.
 """
 
+import collections.abc
 import contextlib
-from typing import Any
+import inspect
+import logging
+from typing import Any, get_args, get_origin
 
 from .exception import SignatureIncompatible
 
 
 def is_any_or_missing(t: Any) -> bool:
-    import inspect
-
     return (
         t is None
         or t == {"type": "any"}
@@ -37,13 +38,11 @@ def is_subtype(sub: Any, sup: Any) -> bool:
         return True
     # Accept class objects directly
     if isinstance(sub, type) and isinstance(sup, type):
-        try:
+        with contextlib.suppress(Exception):
             if issubclass(sub, sup):
                 return True
-        except Exception:
-            pass
         # Cross-module: compare by class name and walk MROs
-        sub_mro = [c for c in getattr(sub, "__mro__", [])]
+        sub_mro = list(getattr(sub, "__mro__", []))
         sup_name = getattr(sup, "__name__", None)
         if sup_name and any(getattr(c, "__name__", None) == sup_name for c in sub_mro):
             return True
@@ -55,13 +54,11 @@ def is_subtype(sub: Any, sup: Any) -> bool:
             sub_type: Any = globals().get(sub_cls)
             sup_type: Any = globals().get(sup_cls)
             if isinstance(sub_type, type) and isinstance(sup_type, type):
-                try:
+                with contextlib.suppress(Exception):
                     if issubclass(sub_type, sup_type):
                         return True
-                except Exception:
-                    pass
                 # Cross-module fallback
-                sub_mro = [c for c in getattr(sub_type, "__mro__", [])]
+                sub_mro = list(getattr(sub_type, "__mro__", []))
                 if sup_cls and any(
                     getattr(c, "__name__", None) == sup_cls for c in sub_mro
                 ):
@@ -86,16 +83,6 @@ def is_supertype(sup: Any, sub: Any) -> bool:
 
 def is_type_compatible(a, b) -> bool:
     # Unwrap typing.Annotated types to their base type for both a and b
-    try:
-        from typing import get_args, get_origin
-    except ImportError:
-
-        def get_origin(tp):
-            return getattr(tp, "__origin__", None)
-
-        def get_args(tp):
-            return getattr(tp, "__args__", ())
-
     def unwrap_annotated(t):
         origin = get_origin(t)
         if origin is not None and origin.__name__ == "Annotated":
@@ -106,8 +93,8 @@ def is_type_compatible(a, b) -> bool:
 
     a = unwrap_annotated(a)
     b = unwrap_annotated(b)
-    print(
-        f"[TYPE DEBUG] Comparing types: a={a!r} (type={type(a)}), b={b!r} (type={type(b)})"
+    logging.getLogger(__name__).debug(
+        f"Comparing types: a={a!r} (type={type(a)}), b={b!r} (type={type(b)})"
     )
     # T8: Adjacent types | A: uint8 → B: uint16 | ✗ | Behavioral differences matter
     # If both are types, not primitive, not subtypes, and not equal, fail
@@ -136,7 +123,9 @@ def is_type_compatible(a, b) -> bool:
         and not issubclass(b, a)
         and not issubclass(a, b)
     ):
-        print(f"[TYPE DEBUG] Primitive type incompatibility detected: a={a}, b={b}")
+        logging.getLogger(__name__).debug(
+            f"Primitive type incompatibility detected: a={a}, b={b}"
+        )
         raise SignatureIncompatible(
             message="Implicit conversion between primitive types is not allowed.",
             context={"A_type": a, "B_type": b},
@@ -155,21 +144,17 @@ def is_type_compatible(a, b) -> bool:
     if a == b:
         return True
     # | T2 | Base → Derived (narrowing) | A: Animal → B: Cat | ✗ | New function requires specific subtype
-    print("DEBUG: a=", a, "b=", b, "a type=", type(a), "b type=", type(b))
+    logging.getLogger(__name__).debug(
+        f"a={a!r} b={b!r} a_type={type(a)} b_type={type(b)}"
+    )
     try:
-        print(
-            "T2 DEBUG: a.__module__=",
-            getattr(a, "__module__", None),
-            "b.__module__=",
-            getattr(b, "__module__", None),
+        logging.getLogger(__name__).debug(
+            f"a.__module__={getattr(a, '__module__', None)!r} b.__module__={getattr(b, '__module__', None)!r}"
         )
     except Exception as e:
-        print("T2 DEBUG: error getting __module__:", e)
-    print(
-        "T2 DEBUG: is_subtype(b, a)=",
-        is_subtype(b, a),
-        "is_subtype(a, b)=",
-        is_subtype(a, b),
+        logging.getLogger(__name__).debug(f"T2 DEBUG: error getting __module__: {e}")
+    logging.getLogger(__name__).debug(
+        f"is_subtype(b, a)={is_subtype(b, a)} is_subtype(a, b)={is_subtype(a, b)}"
     )
     # Disallow narrowing: base → derived (A: Animal → B: Cat)
     if (
@@ -200,21 +185,19 @@ def is_type_compatible(a, b) -> bool:
 
         abc_types = (numbers.Integral, numbers.Real, numbers.Number)
         # Accept if both are ABCs and a is a subclass of b (contravariant acceptance)
-        try:
+        with contextlib.suppress(Exception):
             if issubclass(a, abc_types) and issubclass(b, abc_types):
                 if issubclass(a, b):
                     return True
                 # Allow if a's MRO contains a class with the same name as b or any of b's ancestors (for ABCs across modules)
-                b_names = set(
+                b_names = {
                     getattr(cls, "__name__", None) for cls in getattr(b, "__mro__", [])
-                )
-                a_mro_names = set(
+                }
+                a_mro_names = {
                     getattr(cls, "__name__", None) for cls in getattr(a, "__mro__", [])
-                )
+                }
                 if b_names & a_mro_names:
                     return True
-        except Exception:
-            pass
         # Otherwise, incompatible
         raise SignatureIncompatible(
             message="Incompatible parameter types: neither is a subtype of the other (narrowing not allowed).",
@@ -224,8 +207,6 @@ def is_type_compatible(a, b) -> bool:
 
     # T3: Interface → Concrete | A: Sized → B: list | ✗ | Implementation restricts valid inputs
     # If A is an ABC/protocol/interface and B is a concrete type, and B is not a subtype of A, fail
-    import collections.abc
-
     if (
         isinstance(a, type)
         and hasattr(collections.abc, a.__name__)

@@ -84,10 +84,9 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
         # Insert assert statements for constraints if __debug__ is True
         if constraints:
             # Compose a PEP 316 docstring for CrossHair
-            doc_lines = []
-            doc_lines.extend(
+            doc_lines = [
                 f"pre: {constraint}" for param_name, _, constraint in constraints
-            )
+            ]
             if return_constraint:
                 doc_lines.append(f"post: {return_constraint}")
             docstring = "\n".join(doc_lines) if doc_lines else None
@@ -95,52 +94,48 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
             type_asserts = []
             constraint_asserts = []
             if __debug__:
-                for param_name, param_type, _ in constraints:
-                    if param_type:
-                        type_asserts.append(
-                            ast.Assert(
-                                test=ast.Call(
-                                    func=ast.Name(id="assumption", ctx=ast.Load()),
-                                    args=[
-                                        ast.Name(id=param_name, ctx=ast.Load()),
-                                        ast.Name(id=param_type, ctx=ast.Load()),
-                                    ],
-                                    keywords=[],
+                type_asserts = [
+                    ast.Assert(
+                        test=ast.Call(
+                            func=ast.Name(id="assumption", ctx=ast.Load()),
+                            args=[
+                                ast.Name(id=param_name, ctx=ast.Load()),
+                                ast.Name(id=param_type, ctx=ast.Load()),
+                            ],
+                            keywords=[],
+                        ),
+                        msg=ast.JoinedStr(
+                            values=[
+                                ast.Constant(
+                                    value=f"Type assertion failed for {param_name}: expected {param_type}, got value="
                                 ),
-                                msg=ast.JoinedStr(
-                                    values=[
-                                        ast.Constant(
-                                            value=f"Type assertion failed for {param_name}: expected {param_type}, got value="
-                                        ),
-                                        ast.FormattedValue(
-                                            value=ast.Name(
-                                                id=param_name, ctx=ast.Load()
-                                            ),
-                                            conversion=-1,
-                                        ),
-                                    ]
+                                ast.FormattedValue(
+                                    value=ast.Name(id=param_name, ctx=ast.Load()),
+                                    conversion=-1,
                                 ),
-                            )
-                        )
-                for param_name, _, constraint in constraints:
-                    expr_ast = ast.parse(str(constraint), mode="eval")
-                    constraint_expr = expr_ast.body
-                    constraint_asserts.append(
-                        ast.Assert(
-                            test=constraint_expr,
-                            msg=ast.JoinedStr(
-                                values=[
-                                    ast.Constant(
-                                        value=f"'{constraint}' not satisfied for {param_name}="
-                                    ),
-                                    ast.FormattedValue(
-                                        value=ast.Name(id=param_name, ctx=ast.Load()),
-                                        conversion=-1,
-                                    ),
-                                ]
-                            ),
-                        )
+                            ]
+                        ),
                     )
+                    for param_name, param_type, _ in constraints
+                    if param_type
+                ]
+                constraint_asserts = [
+                    ast.Assert(
+                        test=ast.parse(str(constraint), mode="eval").body,
+                        msg=ast.JoinedStr(
+                            values=[
+                                ast.Constant(
+                                    value=f"'{constraint}' not satisfied for {param_name}="
+                                ),
+                                ast.FormattedValue(
+                                    value=ast.Name(id=param_name, ctx=ast.Load()),
+                                    conversion=-1,
+                                ),
+                            ]
+                        ),
+                    )
+                    for param_name, _, constraint in constraints
+                ]
             # Compose new body: docstring (as true docstring), type asserts, constraint asserts, then rest
             new_body = []
             if docstring:
@@ -169,11 +164,16 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
 
             # Recursively transform all return statements in the function body
             class ReturnTransformer(ast.NodeTransformer):
-                def visit_Return(self, return_node):
+                def visit_Return(self, node):
                     # Assign return value to ret_var
+                    assign_value = (
+                        node.value
+                        if node.value is not None
+                        else ast.Constant(value=None)
+                    )
                     assign = ast.Assign(
                         targets=[ast.Name(id=ret_var, ctx=ast.Store())],
-                        value=return_node.value,
+                        value=assign_value,
                     )
                     asserts = []
                     # Type assertion for return value
@@ -234,9 +234,14 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
                             ast.Return(value=ast.Name(id=ret_var, ctx=ast.Load())),
                         ]
                     else:
-                        return [return_node]
+                        return [node]
 
-            node.body = ReturnTransformer().visit(ast.Module(body=node.body)).body
+            # ast.Module requires 'type_ignores' in newer Python versions
+            node.body = (
+                ReturnTransformer()
+                .visit(ast.Module(body=node.body, type_ignores=[]))
+                .body
+            )
         return node
 
     def _transform_ann(self, ann: ast.AST) -> ast.expr:

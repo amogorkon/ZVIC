@@ -8,7 +8,8 @@ from typing import Any, Mapping, get_args, get_origin, get_type_hints
 from .annotation_constraints import AnnotateCallsTransformer
 from .utils import _, assumption, normalize_constraint
 
-type CANONICAL = Mapping[str, str | CANONICAL]
+# More permissive canonical type to match function/class representations
+CANONICAL = Mapping[str, Any]
 
 
 def constrain_this_module():
@@ -131,12 +132,9 @@ def canonicalize(obj: Any) -> CANONICAL:
 
 def canonical_signature(func: Any, name: str | None = None) -> CANONICAL:
     sig = inspect.signature(func)
-    params = []
 
     def strip_typing_prefix(s: str) -> str:
-        if s.startswith("typing."):
-            return s.replace("typing.", "")
-        return s
+        return s.replace("typing.", "") if s.startswith("typing.") else s
 
     positional_only: list[dict[str, Any]] = []
     positional_or_keyword: list[dict[str, Any]] = []
