@@ -63,7 +63,9 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
                                     and isinstance(new_ann.slice, ast.Tuple)
                                     and len(new_ann.slice.elts) == 2
                                 ):
-                                    new_ann.slice.elts[1] = ast.Constant(value=param_constraint)
+                                    new_ann.slice.elts[1] = ast.Constant(
+                                        value=param_constraint
+                                    )
                             except Exception:
                                 pass
                             constraints.append((arg.arg, param_type, param_constraint))
@@ -285,7 +287,9 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
                 # arguments and keywords. This avoids slicing the unparsed
                 # text which is error-prone for nested calls.
                 arg_parts = [ast.unparse(a) for a in ann.args]
-                kw_parts = [f"{kw.arg}={ast.unparse(kw.value)}" for kw in ann.keywords if kw.arg]
+                kw_parts = [
+                    f"{kw.arg}={ast.unparse(kw.value)}" for kw in ann.keywords if kw.arg
+                ]
                 parts = arg_parts + kw_parts
                 constraint = ", ".join(parts)
             except Exception:

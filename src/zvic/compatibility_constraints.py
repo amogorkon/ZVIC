@@ -1,5 +1,5 @@
-import logging
 import ast
+import logging
 import textwrap
 
 from .exception import SignatureIncompatible
@@ -40,7 +40,9 @@ def is_constraint_compatible(a_param, b_param):
             return False
         if len(a_node.comparators) != 1 or len(b_node.comparators) != 1:
             return False
-        if not (isinstance(a_node.left, ast.Name) and isinstance(b_node.left, ast.Name)):
+        if not (
+            isinstance(a_node.left, ast.Name) and isinstance(b_node.left, ast.Name)
+        ):
             return False
         if a_node.left.id != b_node.left.id:
             return False
@@ -51,7 +53,10 @@ def is_constraint_compatible(a_param, b_param):
         b_val = b_node.comparators[0]
         if not (isinstance(a_val, ast.Constant) and isinstance(b_val, ast.Constant)):
             return False
-        if not (isinstance(a_val.value, (int, float)) and isinstance(b_val.value, (int, float))):
+        if not (
+            isinstance(a_val.value, (int, float))
+            and isinstance(b_val.value, (int, float))
+        ):
             return False
 
         a_num = a_val.value
@@ -97,6 +102,7 @@ def is_constraint_compatible(a_param, b_param):
         # If CrossHair returned None (unable to analyse), try a tiny AST-based
         # heuristic for simple numeric bounds like `x < 20` vs `x < 10`.
         if crosshair_result is None:
+
             def _simple_narrowing(a_expr: str, b_expr: str) -> bool:
                 """Return True if b_expr is a strictly narrower numeric bound than a_expr.
 
@@ -109,11 +115,16 @@ def is_constraint_compatible(a_param, b_param):
                     return False
 
                 # Ensure both are simple Compare nodes with single comparator and a Name left
-                if not (isinstance(a_node, ast.Compare) and isinstance(b_node, ast.Compare)):
+                if not (
+                    isinstance(a_node, ast.Compare) and isinstance(b_node, ast.Compare)
+                ):
                     return False
                 if len(a_node.comparators) != 1 or len(b_node.comparators) != 1:
                     return False
-                if not (isinstance(a_node.left, ast.Name) and isinstance(b_node.left, ast.Name)):
+                if not (
+                    isinstance(a_node.left, ast.Name)
+                    and isinstance(b_node.left, ast.Name)
+                ):
                     return False
                 # name must match variable used after replacement; we've been using 'x'
                 if a_node.left.id != b_node.left.id:
@@ -123,9 +134,14 @@ def is_constraint_compatible(a_param, b_param):
                 b_op = type(b_node.ops[0])
                 a_val = a_node.comparators[0]
                 b_val = b_node.comparators[0]
-                if not (isinstance(a_val, ast.Constant) and isinstance(b_val, ast.Constant)):
+                if not (
+                    isinstance(a_val, ast.Constant) and isinstance(b_val, ast.Constant)
+                ):
                     return False
-                if not (isinstance(a_val.value, (int, float)) and isinstance(b_val.value, (int, float))):
+                if not (
+                    isinstance(a_val.value, (int, float))
+                    and isinstance(b_val.value, (int, float))
+                ):
                     return False
 
                 a_num = a_val.value
