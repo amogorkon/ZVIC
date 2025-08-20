@@ -87,11 +87,6 @@ except SignatureIncompatible as e:
 	print(e.to_json())
 ```
 
-
-## Canonicalization & Compatibility
-
-Function signatures are canonicalized to ensure consistent interface identification and compatibility checks. See the [Canonicalization & Compatibility Spec](docs/specs/spec-04-Canonicalization-Compatibility.md) for details and compatibility rules.
-
 ## Compatibility testing levels
 ZVIC tests compatibility at multiple levels to give consumers high confidence before accepting a new module or version. The test strategy is deliberate and layered so that regressions are caught early and explained clearly.
 
@@ -298,3 +293,4 @@ If you have questions also feel free to use the github issues or the [ZVIC Discu
 
 
 ***Enjoy!***
+
