@@ -1,4 +1,5 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
+[![Test / Build / Publish](https://github.com/amogorkon/ZVIC/actions/workflows/publish.yml/badge.svg)](https://github.com/amogorkon/ZVIC/actions/workflows/publish.yml)
 
 # ZVIC
 
@@ -293,6 +294,7 @@ For example, `2025.26` corresponds to week 26 of 2025. This mirrors the structur
 You can also contact me one-on-one! Check my [office hours](https://calendly.com/amogorkon/officehours) to set up a meeting :-)
 
 If you have questions also feel free to use the github issues or the [ZVIC Discussions](https://github.com/amogorkon/ZVIC/discussions).
+
 
 
 ***Enjoy!***
