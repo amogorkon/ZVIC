@@ -90,28 +90,22 @@ except SignatureIncompatible as e:
 ## Compatibility testing levels
 ZVIC tests compatibility at multiple levels to give consumers high confidence before accepting a new module or version. The test strategy is deliberate and layered so that regressions are caught early and explained clearly.
 
-- Public interface presence
-	- Modules are compared by their public attributes (respecting `__all__` when present). Any public attribute present in A but missing from B is reported as an incompatibility.
-
-- Callable-level checks (structural)
-	- Callables (functions, methods, class `__call__`) are checked for signature compatibility. This covers parameter kinds (positional-only, positional-or-keyword, keyword-only), `*args`/`**kwargs`, default values, and parameter names where appropriate.
-	- `are_params_compatible()` implements the scenario-based rules from the spec and raises structured errors when B cannot accept all calls that A accepts.
-
-- Type normalization and compatibility
-	- A type-normalization layer canonicalizes runtime annotation types to a uniform schema.
-	- `is_type_compatible()` implements rules such as: exact-type equality, allowed widening (derived→base contravariant acceptance), disallowed narrowing (base→derived), container invariance for invariants (e.g., `list[int]`), and ABC-aware acceptance.
-
-- Constraint checks (Annotated)
-- Constraint checking (Annotated)
-	- ZVIC recognizes `typing.Annotated[T, constraint]` forms and will transform inline call-style annotations into `Annotated[...]` during module loading when necessary.
-	- Constraint checking is best-effort: if the optional CrossHair analyser is installed, ZVIC will attempt a semantic verification (searching for counterexamples). If CrossHair is not available or cannot analyze a predicate, ZVIC falls back to deterministic heuristics (for example numeric/length comparisons) and ultimately to exact-match of the constraint expression.
-
+### Public interface
+- Modules are compared by their public attributes (respecting `__all__` when present). Any public attribute present in A but missing from B is reported as an incompatibility.
 - Class and enum checks
 	- Classes are compared for missing methods, and important special call sites such as `__init__` and `__call__` are compared recursively.
 	- Enum compatibility ensures member presence and value stability (we require that names present in A also exist in B and that their underlying values remain equal), while allowing reordering or new additional members in B.
 
-- End-to-end tests
-	- The test-suite includes unit tests that exercise canonicalization, parameter scenarios, type compatibility edge-cases, and small integration examples. See `tests/` for examples and `docs/specs/spec-08-Test-Plan.md` for the test plan.
+### Signatures
+- Callables (functions, methods, class `__call__`) are checked for signature compatibility. This covers parameter kinds (positional-only, positional-or-keyword, keyword-only), `*args`/`**kwargs`, default values, and parameter names where appropriate.
+- `are_params_compatible()` implements the scenario-based rules from the spec and raises structured errors when B cannot accept all calls that A accepts.
+
+### Type per Parameter
+- `is_type_compatible()` implements rules such as: exact-type equality, allowed widening (derived→base contravariant acceptance), disallowed narrowing (base→derived), container invariance for invariants (e.g., `list[int]`), and ABC-aware acceptance.
+
+### Constraints
+- ZVIC recognizes constraints in the form of `foo(x: int(_ > 10)` and transforms the inner expression into a form crosshair understands as well as an assert for runtime checking
+- Constraint checking is best-effort: if the optional CrossHair analyser is installed, ZVIC will attempt a semantic verification (searching for counterexamples). If CrossHair is not available or cannot analyze a predicate, ZVIC falls back to deterministic heuristics (for example numeric/length comparisons) and ultimately to exact-match of the constraint expression.
 
 ## How to run the test-suite
 
@@ -121,7 +115,7 @@ From the repository root:
 pytest -q
 ```
 
-Run a single test file (example):
+Run the main test:
 
 ```sh
 pytest tests/test_spec08_compatibility.py -q
@@ -293,4 +287,5 @@ If you have questions also feel free to use the github issues or the [ZVIC Discu
 
 
 ***Enjoy!***
+
 
