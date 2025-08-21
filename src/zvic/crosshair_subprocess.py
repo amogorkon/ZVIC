@@ -1,13 +1,25 @@
+import logging
 import os
 import subprocess
 import sys
 import tempfile
 
 
-def run_crosshair_on_code(code: str, function_name: str) -> bool | None:
+def run_crosshair_on_code(
+    code: str, function_name: str, timeout_seconds: int | None = 10
+) -> bool | None:
     """
     Write the given code to a temporary file and run crosshair check on the specified function.
-    Returns True if crosshair finds no counterexample, False otherwise.
+
+    Args:
+        code: Python source to write to a temp file for CrossHair to analyse.
+        function_name: the function name inside `code` to check (for future use).
+        timeout_seconds: maximum seconds to wait for the CrossHair subprocess. If
+            None, wait indefinitely. Defaults to 10 seconds.
+
+    Returns:
+        True if CrossHair finds no counterexample, False if a counterexample was
+        found, or None if CrossHair could not analyse (or timed out).
     """
     with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as tmp:
         tmp.write(code)
@@ -25,7 +37,19 @@ def run_crosshair_on_code(code: str, function_name: str) -> bool | None:
             "--per_condition_timeout",
             "2",
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        try:
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=timeout_seconds
+            )
+        except subprocess.TimeoutExpired as e:
+            # CrossHair ran longer than allowed. Treat this as 'could not analyse'.
+            logging.getLogger(__name__).debug(
+                "CrossHair timed out after %s seconds while analysing function %r: %s",
+                timeout_seconds,
+                function_name,
+                e,
+            )
+            return None
         output = result.stdout + "\n" + result.stderr
         # ...debug print removed...
         # Look for 'No counterexamples found' or similar success message, or exit code 0

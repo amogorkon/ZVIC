@@ -89,7 +89,8 @@ def is_constraint_compatible(a_param, b_param):
         # CrossHair support is not installed.
         from .crosshair_subprocess import run_crosshair_on_code
 
-        crosshair_result = run_crosshair_on_code(func_code, "_chk")
+        # Allow CrossHair to run for a limited amount of time to avoid hangs.
+        crosshair_result = run_crosshair_on_code(func_code, "_chk", timeout_seconds=10)
         # crosshair_result: True => no counterexample found (OK)
         #                   False => counterexample found (B is narrower)
         #                   None => CrossHair could not analyse (treat as unknown)
