@@ -1,4 +1,4 @@
-# LLM-Focused Summary: ZVIC (Zero-Version Interface Contracts)
+# ZVIC (Zero-Version Interface Contracts)
 
 This document provides a concise, LLM-oriented summary of ZVIC: both the project and the paradigm of Zero-Version Interface Contracts. ZVIC is a project that enables and enforces the ZVIC paradigm. This summary is intended to help LLMs understand, reason about, and generate code or documentation that aligns with these principles and requirements.
 

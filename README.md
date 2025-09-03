@@ -282,10 +282,8 @@ For example, `2025.26` corresponds to week 26 of 2025. This mirrors the structur
 # Office Hours
 You can also contact me one-on-one! Check my [office hours](https://calendly.com/amogorkon/officehours) to set up a meeting :-)
 
-If you have questions also feel free to use the github issues or the [ZVIC Discussions](https://github.com/amogorkon/ZVIC/discussions).
+If you have questions also feel free to use the github issues or the [Discussions](https://github.com/amogorkon/ZVIC/discussions).
 
 
 
 ***Enjoy!***
-
-
