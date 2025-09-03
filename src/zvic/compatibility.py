@@ -3,7 +3,8 @@ import logging
 import types
 from enum import Enum
 from inspect import signature
-from typing import Any, Callable, cast
+from typing import Any, cast
+from collections.abc import Callable
 
 from .compatibility_constraints import is_constraint_compatible
 from .compatibility_params import are_params_compatible

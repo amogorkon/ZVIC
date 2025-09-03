@@ -112,10 +112,16 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
             type_asserts = []
             constraint_asserts = []
             if __debug__:
+                # Use qualified call to zvic.assumption via alias `_zvic` to avoid
+                # shadowing a local `assumption` symbol in the transformed module.
                 type_asserts = [
                     ast.Assert(
                         test=ast.Call(
-                            func=ast.Name(id="assumption", ctx=ast.Load()),
+                            func=ast.Attribute(
+                                value=ast.Name(id="_zvic", ctx=ast.Load()),
+                                attr="assumption",
+                                ctx=ast.Load(),
+                            ),
                             args=[
                                 ast.Name(id=param_name, ctx=ast.Load()),
                                 ast.Name(id=param_type, ctx=ast.Load()),
@@ -199,7 +205,11 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
                         asserts.append(
                             ast.Assert(
                                 test=ast.Call(
-                                    func=ast.Name(id="assumption", ctx=ast.Load()),
+                                    func=ast.Attribute(
+                                        value=ast.Name(id="_zvic", ctx=ast.Load()),
+                                        attr="assumption",
+                                        ctx=ast.Load(),
+                                    ),
                                     args=[
                                         ast.Name(id=ret_var, ctx=ast.Load()),
                                         ast.Name(id=return_type, ctx=ast.Load()),
@@ -342,11 +352,13 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
                 level=0,
             )
             new_node.body.insert(0, imp_future)
-        # Insert 'from zvic import assumption' after __future__ import
-        has_assumption_import = any(
-            isinstance(stmt, ast.ImportFrom)
-            and stmt.module == "zvic"
-            and any(alias.name == "assumption" for alias in stmt.names)
+        # Insert 'import zvic as _zvic' after __future__ import so inserted
+        # assertions call the library's `assumption` via a qualified name. This
+        # avoids shadowing a local `assumption` symbol in the transformed module
+        # which could otherwise cause recursive behavior.
+        has_zvic_import = any(
+            isinstance(stmt, ast.Import)
+            and any(alias.name == "zvic" for alias in stmt.names)
             for stmt in new_node.body
         )
         # Find the last __future__ import
@@ -354,13 +366,9 @@ class AnnotateCallsTransformer(ast.NodeTransformer):
         for idx, stmt in enumerate(new_node.body):
             if isinstance(stmt, ast.ImportFrom) and stmt.module == "__future__":
                 insert_at = idx + 1
-        if not has_assumption_import:
-            imp_assumption = ast.ImportFrom(
-                module="zvic",
-                names=[ast.alias(name="assumption", asname=None)],
-                level=0,
-            )
-            new_node.body.insert(insert_at, imp_assumption)
+        if not has_zvic_import:
+            imp_zvic = ast.Import(names=[ast.alias(name="zvic", asname="_zvic")])
+            new_node.body.insert(insert_at, imp_zvic)
         # Inject Annotated import if needed
         if self.need_imports:
             imp_annotated = ast.ImportFrom(

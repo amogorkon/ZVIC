@@ -8,7 +8,7 @@ import sys
 from collections import namedtuple
 from dataclasses import dataclass
 from inspect import Parameter, Signature
-from typing import Annotated, Any, get_args, get_origin
+from typing import Any, get_args, get_origin
 
 
 def assumption(obj: Any, expected: type) -> bool:
@@ -277,7 +277,7 @@ def prepare_params(sig: Signature, func=None) -> Params:
         import typing
 
         origin = get_origin(annotation)
-        if origin is Annotated or origin is typing.Annotated:
+        if origin is typing.Annotated:
             args = get_args(annotation)
             if len(args) > 1:
                 constraint = str(args[1])

@@ -1,19 +1,41 @@
 import ast
+import contextlib
 import inspect
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Mapping, get_args, get_origin, get_type_hints
+from typing import Any, get_args, get_origin, get_type_hints
 
-from .annotation_constraints import AnnotateCallsTransformer
+from .ast_utils import transform_module
+from .import_hook import ZvicFinder
 from .utils import _, assumption, normalize_constraint
 
 # More permissive canonical type to match function/class representations
 CANONICAL = Mapping[str, Any]
 
+__all__ = [
+    "constrain_this_module",
+    "transform_module",
+    "install_import_hook",
+    "uninstall_import_hook",
+    "load_module",
+    "canonicalize",
+    "pprint_recursive",
+    "transform_replace",
+]
 
-def constrain_this_module():
-    """Rewrites the current module in-place with annotation constraints."""
+
+def constrain_this_module(*, return_lingering: bool = False):
+    """Transform and replace the caller module in-place using the pure transformer.
+
+    This function delegates the heavy lifting to the pure `transform_module`
+    implementation (which returns a newly executed module and the transformed
+    AST). It then updates the caller module's globals to point to
+    the new objects (removing names which no longer exist) and performs a
+    best-effort scan of other loaded modules to detect external references
+    to old objects — if any are found a warning is emitted.
+    """
     frame = inspect.currentframe()
     if frame is None or frame.f_back is None:
         raise RuntimeError("Could not find caller frame")
@@ -21,7 +43,11 @@ def constrain_this_module():
 
     if "_" not in caller_globals:
         caller_globals["_"] = _
-    # Inject zvic.utils.assumption into caller's globals if not already present
+        with contextlib.suppress(Exception):
+            import builtins
+
+            if not hasattr(builtins, "_"):
+                setattr(builtins, "_", _)
     if "assumption" not in caller_globals:
         caller_globals["assumption"] = assumption
 
@@ -29,38 +55,267 @@ def constrain_this_module():
     if caller_globals.get("__zvic_transformed__", False):
         return
     caller_globals["__zvic_transformed__"] = True
-    filename = caller_globals["__file__"]
-    with open(filename, "r", encoding="utf-8") as f:
-        source = f.read()
 
-    assert source.startswith(
-        "from __future__ import annotations"
-    ) and sys.version_info < (3, 13), (
-        f"ZVIC requires 'from __future__ import annotations' in {filename} for advanced annotation constraints on Python < 3.13. Please add it at the top of your module."
-    )
-    tree = ast.parse(source, filename=filename)
-    transformer = AnnotateCallsTransformer()
-    new_tree = transformer.visit(tree)
-    ast.fix_missing_locations(new_tree)
-    code = compile(new_tree, filename, "exec")
-    exec(code, caller_globals)
-    return ast.unparse(new_tree)
+    filename = caller_globals.get("__file__")
+    if not filename:
+        raise RuntimeError("Caller module has no __file__; cannot transform")
+
+    # Parse source AST to validate future import on older Pythons
+    source = Path(filename).read_text(encoding="utf-8")
+    parsed = ast.parse(source, filename=filename)
+    if sys.version_info < (3, 13):
+        body = parsed.body
+        has_future_annotations = False
+
+        idx = 0
+        if (
+            body
+            and isinstance(body[0], ast.Expr)
+            and isinstance(body[0].value, ast.Constant)
+            and isinstance(body[0].value.value, str)
+        ):
+            idx = 1
+        if (
+            idx < len(body)
+            and isinstance(body[idx], ast.ImportFrom)
+            and body[idx].module == "__future__"
+        ):
+            for alias in body[idx].names:
+                if alias.name == "annotations":
+                    has_future_annotations = True
+                    break
+        if not has_future_annotations:
+            # Insert the future import into the source so downstream parsing
+            # and transformations see postponed annotations. We do this
+            # automatically to avoid requiring the user to modify their code.
+            import warnings
+
+            warnings.warn(
+                "`from __future__ import annotations` was inserted. This may or may not change runtime behaviour!",
+                UserWarning,
+            )
+
+            class _Placeholder:
+                def __getattr__(self, _):
+                    return self
+
+                def __call__(self, *a, **k):
+                    return self
+
+                def __bool__(self):
+                    return False
+
+                def __int__(self):
+                    return 0
+
+                def __index__(self):
+                    return 0
+
+                def __len__(self):
+                    return 0
+
+                def __mod__(self, other):
+                    return 0
+
+                def __rmod__(self, other):
+                    return 0
+
+                def __lt__(self, other):
+                    return False
+
+                def __le__(self, other):
+                    return False
+
+                def __gt__(self, other):
+                    return False
+
+                def __ge__(self, other):
+                    return False
+
+                def __eq__(self, other):
+                    return False
+
+                def __ne__(self, other):
+                    return True
+
+                def __add__(self, other):
+                    return self
+
+                def __radd__(self, other):
+                    return self
+
+                def __sub__(self, other):
+                    return self
+
+                def __rsub__(self, other):
+                    return self
+
+                def __repr__(self):
+                    return "<_>"
+
+            # Only set '_' if not already present to avoid clobbering user symbols
+            if caller_globals.get("_") is None:
+                caller_globals["_"] = _Placeholder()
+                with contextlib.suppress(Exception):
+                    import builtins
+
+                    if not hasattr(builtins, "_"):
+                        setattr(builtins, "_", _)
+            # Prepend the future import after an optional module docstring
+            insert_idx = 0
+            if (
+                body
+                and isinstance(body[0], ast.Expr)
+                and isinstance(body[0].value, ast.Constant)
+                and isinstance(body[0].value.value, str)
+            ):
+                # keep docstring as first element
+                insert_idx = 1
+            future_line = "from __future__ import annotations\n"
+            # Modify the source string directly and reparse
+            lines = source.splitlines(keepends=True)
+            # Determine where to insert: after any initial shebang and docstring
+            # If insert_idx == 1, we need to find the end of the docstring statement
+            if insert_idx == 1:
+                # Find the line index of the first statement after the docstring
+                # We'll approximate by inserting after the first triple-quoted string
+                # or after the first line if detection fails.
+                try:
+                    # Locate end of module docstring in the original source by using ast.get_docstring
+                    mod_doc = ast.get_docstring(parsed)
+                    if mod_doc is not None:
+                        # Find the first occurrence of the docstring literal in the source
+                        doc_node = parsed.body[0]
+                        # Use lineno and end_lineno (available in Python 3.8+)
+                        end_line = getattr(doc_node, "end_lineno", None)
+                        if end_line is not None:
+                            # Insert after that line
+                            insert_at_char = sum(len(l) for l in lines[:end_line])
+                            source = (
+                                source[:insert_at_char]
+                                + future_line
+                                + source[insert_at_char:]
+                            )
+                        else:
+                            # Fallback: insert after first line
+                            source = future_line + source
+                    else:
+                        source = future_line + source
+                except Exception:
+                    source = future_line + source
+            else:
+                source = future_line + source
+            # Reparse with the modified source
+            parsed = ast.parse(source, filename=filename)
+
+    # Obtain the original module object (should already be in sys.modules)
+    module_name = caller_globals.get("__name__")
+    original_module = sys.modules.get(module_name)
+
+    # Use the pure transformer to produce a new executed module
+    fake_module = ModuleType(module_name or "<module>")
+    fake_module.__dict__["__file__"] = filename
+    new_mod, new_tree = transform_module(fake_module)
+
+    # Install transformed module into sys.modules so future imports see it
+    import gc
+    import weakref
+
+    old_mod_ref = weakref.ref(original_module) if original_module is not None else None
+    sys.modules[module_name] = new_mod
+
+    # Replace caller globals: remove names that no longer exist and update others
+    new_keys = set(new_mod.__dict__.keys())
+    for k in list(caller_globals.keys()):
+        if k.startswith("__"):
+            continue
+        if k not in new_keys:
+            del caller_globals[k]
+    for k, v in new_mod.__dict__.items():
+        if k == "__file__":
+            continue
+        caller_globals[k] = v
+
+    # Try to allow the old module to be garbage-collected; if it remains,
+    # perform a scan to report which names are still referenced elsewhere.
+    # Remove our strong local reference to the old module to avoid keeping it alive.
+    del original_module
+    gc.collect()
+
+    lingering: dict[str, list[str]] = {}
+    if old_mod_ref is not None and old_mod_ref() is not None:
+        old_mod = old_mod_ref()
+        for name, old_obj in getattr(old_mod, "__dict__", {}).items():
+            if name.startswith("__"):
+                continue
+            new_obj = new_mod.__dict__.get(name, object())
+            if old_obj is new_obj:
+                continue
+            refs: list[str] = []
+            for m in sys.modules.values():
+                try:
+                    if m is None or getattr(m, "__name__", None) == module_name:
+                        continue
+                    if getattr(m, name, None) is old_obj:
+                        refs.append(getattr(m, "__name__", str(m)))
+                except Exception:
+                    continue
+            if refs:
+                lingering[name] = refs
+
+        if lingering:
+            import warnings
+
+            details = ", ".join(
+                f"{n} (referenced in: {sorted(set(refs))})"
+                for n, refs in lingering.items()
+            )
+            warnings.warn(
+                f"ZVIC: could not fully replace some objects from module '{module_name}': {details}.\n"
+                "Other modules still hold references to the original objects (e.g. via 'from module import name').\n"
+                "Consider reloading those modules or restarting the interpreter for a complete replacement.",
+                RuntimeWarning,
+            )
+
+    transformed_source = ast.unparse(new_tree)
+    if return_lingering:
+        return transformed_source, lingering
+    return transformed_source
+
+
+# Import hook helpers
+_installed_finder = None
+
+
+def install_import_hook(
+    exclude_prefix: str | None = None, allow_roots: list[str] | None = None
+):
+    """Install ZvIC import hook into sys.meta_path. Call from tests or
+    session startup to ensure all subsequent imports are transformed.
+    """
+    global _installed_finder
+    if _installed_finder is not None:
+        return
+    finder = ZvicFinder(exclude_prefix=exclude_prefix, allow_roots=allow_roots)
+    sys.meta_path.insert(0, finder)
+    _installed_finder = finder
+
+
+def uninstall_import_hook():
+    global _installed_finder
+    if _installed_finder is None:
+        return
+    with contextlib.suppress(ValueError):
+        sys.meta_path.remove(_installed_finder)
+    _installed_finder = None
 
 
 def load_module(path: Path, module_name: str) -> ModuleType:
     original_source = path.read_text(encoding="utf-8")
-    tree = ast.parse(original_source, filename=str(path))
-
-    transformer = AnnotateCallsTransformer()
-    transformed_tree = transformer.visit(tree)
-    transformed_tree: ast.Module = transformer.visit_Module(transformed_tree)  # type: ignore
-    ast.fix_missing_locations(transformed_tree)
-    assert assumption(transformed_tree, ast.Module)
-    code = compile(transformed_tree, str(path), "exec")
-
-    mod = ModuleType(module_name)
-    mod.__dict__["__file__"] = str(path)
-    exec(code, mod.__dict__)
+    # transform and execute into a fresh module
+    orig_mod = ModuleType(module_name)
+    orig_mod.__dict__["__file__"] = str(path)
+    mod, transformed_tree = transform_module(orig_mod)
 
     setattr(mod, "__original_source__", original_source)
 
@@ -239,3 +494,10 @@ def pprint_recursive(obj, indent=0):
                 print(f"{prefix}- {v}")
     else:
         print(f"{prefix}{obj}")
+
+
+def transform_replace(module_name: str, *, force: bool = False, dry_run: bool = False):
+    # Developer tooling shim (lazy import to avoid import-time side-effects)
+    from .transform_replace import replace_module
+
+    return replace_module(module_name, force=force, dry_run=dry_run)

@@ -6,8 +6,11 @@ from .main import (
     canonical_signature,
     canonicalize,
     constrain_this_module,
+    install_import_hook,
     load_module,
+    transform_replace,
 )
+from .transform_replace import replace_module
 from .utils import _, assumption
 
 __all__ = [
@@ -16,7 +19,10 @@ __all__ = [
     "canonical_signature",
     "_",
     "constrain_this_module",
+    "install_import_hook",
     "assumption",
+    "transform_replace",
+    "replace_module",
     "are_params_compatible",
     "SignatureIncompatible",
     "is_type_compatible",
